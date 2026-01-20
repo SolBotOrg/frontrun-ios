@@ -78,3 +78,5 @@ xcode-files
 .bsp/**
 /.claude/
 /buildbox/*
+build-system/development-configuration.json
+bazel-frontrun-ios
