@@ -750,6 +750,6 @@ if __name__ == "__main__":
       application_output_path="Telegram/Telegram.ipa",
       minimum_os="13.0",
       platform_type="ios",
-      sim_device="iPhone 16 Pro",
-      sim_os_version="26.0",
+      sim_device="",        # Empty = auto-detect best available device
+      sim_os_version="",    # Empty = auto-detect best available iOS version
   )
