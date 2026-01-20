@@ -30,3 +30,7 @@ unzip -o bazel-bin/Telegram/Telegram.ipa -d bazel-bin/Telegram/Telegram_extracte
 - Most code is organized into libraries in `submodules/`
 - External code is located in `third-party/`
 - No tests are used at the moment
+
+## Git Workflow
+- This is a fork of Telegram-iOS. Always push to `SolBotOrg/frontrun-ios`, not the upstream repo.
+- When creating PRs, use: `gh pr create --repo SolBotOrg/frontrun-ios`
