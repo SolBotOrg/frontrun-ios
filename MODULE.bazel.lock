@@ -1,5 +1,5 @@
 {
-  "lockFileVersion": 18,
+  "lockFileVersion": 24,
   "registryFileHashes": {
     "https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/bazel_registry.json": "8a28e4aff06ee60aed2a8c281907fb8bcbf3b753c91fb5a5c57da3215d5b3497",
     "https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20210324.2/MODULE.bazel": "7cd0312e064fde87c8d1cd79ba06c876bd23630c83466e9500321be55c96ace2",
@@ -156,7 +156,7 @@
   "moduleExtensions": {
     "@@rules_kotlin+//src/main/starlark/core/repositories:bzlmod_setup.bzl%rules_kotlin_extensions": {
       "general": {
-        "bzlTransitiveDigest": "OlvsB0HsvxbR8ZN+J9Vf00X/+WVz/Y/5Xrq2LgcVfdo=",
+        "bzlTransitiveDigest": "rL/34P1aFDq2GqVC2zCFgQ8nTuOC6ziogocpvG50Qz8=",
         "usagesDigest": "QI2z8ZUR+mqtbwsf2fLqYdJAkPOHdOV+tF2yVAUgRzw=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -253,115 +253,7 @@
           ]
         ]
       }
-    },
-    "@@rules_xcodeproj+//xcodeproj:extensions.bzl%internal": {
-      "general": {
-        "bzlTransitiveDigest": "hsJI1bzu5CX3ZE+NX8jnNWEOh1pNDT650SbTSBnF5jA=",
-        "usagesDigest": "fvsnMonVwKDYnBfww4bXuYie3WU0d9VSqT2gePSdQco=",
-        "recordedFileInputs": {},
-        "recordedDirentsInputs": {},
-        "envVariables": {},
-        "generatedRepoSpecs": {
-          "rules_xcodeproj_generated": {
-            "repoRuleId": "@@rules_xcodeproj+//xcodeproj:repositories.bzl%generated_files_repo",
-            "attributes": {}
-          }
-        },
-        "recordedRepoMappingEntries": [
-          [
-            "rules_xcodeproj+",
-            "bazel_tools",
-            "bazel_tools"
-          ]
-        ]
-      }
-    },
-    "@@rules_xcodeproj+//xcodeproj:extensions.bzl%non_module_deps": {
-      "general": {
-        "bzlTransitiveDigest": "hsJI1bzu5CX3ZE+NX8jnNWEOh1pNDT650SbTSBnF5jA=",
-        "usagesDigest": "jzxYhnOC9BE0dJ0biFLfxWXi/+R19uAAZkJ0p9CY0JI=",
-        "recordedFileInputs": {},
-        "recordedDirentsInputs": {},
-        "envVariables": {},
-        "generatedRepoSpecs": {
-          "rules_xcodeproj_legacy_index_import": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file_content": "load(\"@bazel_skylib//rules:native_binary.bzl\", \"native_binary\")\n\nnative_binary(\n    name = \"index_import\",\n    src = \"index-import\",\n    out = \"index-import\",\n    visibility = [\"//visibility:public\"],\n)\n",
-              "canonical_id": "index-import-5.8.0.1",
-              "sha256": "28c1ffa39d99e74ed70623899b207b41f79214c498c603915aef55972a851a15",
-              "url": "https://github.com/MobileNativeFoundation/index-import/releases/download/5.8.0.1/index-import.tar.gz"
-            }
-          },
-          "rules_xcodeproj_index_import": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file_content": "load(\"@bazel_skylib//rules:native_binary.bzl\", \"native_binary\")\n\nnative_binary(\n    name = \"index_import\",\n    src = \"index-import\",\n    out = \"index-import\",\n    visibility = [\"//visibility:public\"],\n)\n",
-              "canonical_id": "index-import-6.1.0.1",
-              "sha256": "9a54fc1674af6031125a9884480a1e31e1bcf48b8f558b3e8bcc6b6fcd6e8b61",
-              "url": "https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0.1/index-import.tar.gz"
-            }
-          },
-          "com_github_apple_swift_argument_parser": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file_content": "load(\"@build_bazel_rules_swift//swift:swift.bzl\", \"swift_library\")\n\nswift_library(\n    name = \"ArgumentParserToolInfo\",\n    srcs = glob([\"Sources/ArgumentParserToolInfo/**/*.swift\"]),\n    visibility = [\"//visibility:public\"],\n)\n\nswift_library(\n    name = \"ArgumentParser\",\n    srcs = glob([\"Sources/ArgumentParser/**/*.swift\"]),\n    visibility = [\"//visibility:public\"],\n    deps = [\":ArgumentParserToolInfo\"],\n)\n",
-              "sha256": "4a10bbef290a2167c5cc340b39f1f7ff6a8cf4e1b5433b68548bf5f1e542e908",
-              "strip_prefix": "swift-argument-parser-1.2.3",
-              "url": "https://github.com/apple/swift-argument-parser/archive/refs/tags/1.2.3.tar.gz"
-            }
-          },
-          "com_github_michaeleisel_jjliso8601dateformatter": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file_content": "objc_library(\n    name = \"JJLISO8601DateFormatter\",\n    srcs = glob([\"Sources/JJLISO8601DateFormatter/**/*\"]),\n    copts = [\n        \"-Wno-incompatible-pointer-types\",\n        \"-Wno-incompatible-pointer-types-discards-qualifiers\",\n        \"-Wno-shorten-64-to-32\",\n        \"-Wno-unreachable-code\",\n        \"-Wno-unused-function\",\n        \"-Wno-unused-variable\",\n    ],\n    includes = [\"Sources/JJLISO8601DateFormatter/include\"],\n    hdrs = glob([\"Sources/JJLISO8601DateFormatter/include/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n",
-              "patches": [
-                "@@rules_xcodeproj+//third_party/com_github_michaeleisel_jjliso8601dateformatter:include_fix.patch"
-              ],
-              "sha256": "6fe15f251f100f3df057c2802a50765387674fde9c922375683682b5ba37eef0",
-              "strip_prefix": "JJLISO8601DateFormatter-0.1.6",
-              "url": "https://github.com/michaeleisel/JJLISO8601DateFormatter/archive/refs/tags/0.1.6.tar.gz"
-            }
-          },
-          "com_github_michaeleisel_zippyjsoncfamily": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file_content": "objc_library(\n    name = \"ZippyJSONCFamily\",\n    copts = [\n        \"-std=c++17\",\n        \"-Wno-unused-function\",\n        \"-Wno-reorder-ctor\",\n        \"-Wno-return-type-c-linkage\",\n        \"-Wno-shorten-64-to-32\",\n        \"-Wno-unused-variable\",\n    ],\n    srcs = glob([\"Sources/ZippyJSONCFamily/**/*\"]),\n    includes = [\"Sources/ZippyJSONCFamily/include\"],\n    hdrs = glob([\"Sources/ZippyJSONCFamily/include/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n",
-              "patches": [
-                "@@rules_xcodeproj+//third_party/com_github_michaeleisel_zippyjsoncfamily:include_fix.patch"
-              ],
-              "sha256": "b215927ada8403e1b056d39450c6a7b59122eca4b0c7fc5beb5f0b5fea2acd72",
-              "strip_prefix": "ZippyJSONCFamily-1.2.9",
-              "url": "https://github.com/michaeleisel/ZippyJSONCFamily/archive/refs/tags/1.2.9.tar.gz"
-            }
-          },
-          "com_github_michaeleisel_zippyjson": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file_content": "load(\"@build_bazel_rules_swift//swift:swift.bzl\", \"swift_library\")\n\nswift_library(\n    name = \"ZippyJSON\",\n    srcs = glob([\"Sources/ZippyJSON/**/*.swift\"]),\n    deps = [\n        \"@com_github_michaeleisel_jjliso8601dateformatter//:JJLISO8601DateFormatter\",\n        \"@com_github_michaeleisel_zippyjsoncfamily//:ZippyJSONCFamily\",\n    ],\n    visibility = [\"//visibility:public\"],\n)\n",
-              "sha256": "4b256843c9c3686c527e76dde54f8d76b6201c1fd903c07dc2211ab1b250bd04",
-              "strip_prefix": "ZippyJSON-1.2.10",
-              "url": "https://github.com/michaeleisel/ZippyJSON/archive/refs/tags/1.2.10.tar.gz"
-            }
-          },
-          "com_github_apple_swift_collections": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file_content": "load(\"@build_bazel_rules_swift//swift:swift.bzl\", \"swift_library\")\n\nswift_library(\n    name = \"Collections\",\n    srcs = glob([\"Sources/Collections/**/*.swift\"]),\n    deps = [\n        \"@com_github_apple_swift_collections//:DequeModule\",\n    ],\n    visibility = [\"//visibility:public\"],\n)\n\nswift_library(\n    name = \"DequeModule\",\n    srcs = glob([\"Sources/DequeModule/**/*.swift\"]),\n    visibility = [\"//visibility:public\"],\n)\n\nswift_library(\n    name = \"OrderedCollections\",\n    srcs = glob([\"Sources/OrderedCollections/**/*.swift\"]),\n    visibility = [\"//visibility:public\"],\n)\n",
-              "sha256": "1a2ec8cc6c63c383a9dd4eb975bf83ce3bc7a2ac21a0289a50dae98a576327d6",
-              "strip_prefix": "swift-collections-4cab1c1c417855b90e9cfde40349a43aff99c536",
-              "url": "https://github.com/apple/swift-collections/archive/4cab1c1c417855b90e9cfde40349a43aff99c536.tar.gz"
-            }
-          }
-        },
-        "recordedRepoMappingEntries": [
-          [
-            "rules_xcodeproj+",
-            "bazel_tools",
-            "bazel_tools"
-          ]
-        ]
-      }
     }
-  }
+  },
+  "facts": {}
 }
