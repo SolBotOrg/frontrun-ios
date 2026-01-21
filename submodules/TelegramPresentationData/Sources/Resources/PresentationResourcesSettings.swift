@@ -176,7 +176,37 @@ public struct PresentationResourcesSettings {
 
     public static let passport = renderIcon(name: "Settings/Menu/Passport")
     public static let watch = renderIcon(name: "Settings/Menu/Watch")
-    
+
+    public static let ai = generateImage(CGSize(width: 29.0, height: 29.0), contextGenerator: { size, context in
+        let bounds = CGRect(origin: CGPoint(), size: size)
+        context.clear(bounds)
+
+        let path = UIBezierPath(roundedRect: bounds, cornerRadius: 7.0)
+        context.addPath(path.cgPath)
+        context.clip()
+
+        let colorsArray: [CGColor] = [
+            UIColor(rgb: 0x9B59D6).cgColor,
+            UIColor(rgb: 0x5B5FD6).cgColor
+        ]
+        var locations: [CGFloat] = [0.0, 1.0]
+        let deviceColorSpace = CGColorSpaceCreateDeviceRGB()
+        let gradient = CGGradient(colorsSpace: deviceColorSpace, colors: colorsArray as CFArray, locations: &locations)!
+
+        context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: CGPoint(x: size.width, y: size.height), options: CGGradientDrawingOptions())
+
+        if let sparklesImage = UIImage(systemName: "sparkles") {
+            let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
+            let configuredImage = sparklesImage.withConfiguration(config)
+            if let tintedImage = generateTintedImage(image: configuredImage, color: UIColor(rgb: 0xffffff)),
+               let cgImage = tintedImage.cgImage {
+                context.draw(cgImage, in: CGRect(origin: CGPoint(x: floorToScreenPixels((bounds.width - tintedImage.size.width) / 2.0), y: floorToScreenPixels((bounds.height - tintedImage.size.height) / 2.0)), size: tintedImage.size))
+            }
+        }
+
+        drawBorder(context: context, rect: bounds)
+    })
+
     public static let support = renderIcon(name: "Settings/Menu/Support")
     public static let faq = renderIcon(name: "Settings/Menu/Faq")
     public static let tips = renderIcon(name: "Settings/Menu/Tips")

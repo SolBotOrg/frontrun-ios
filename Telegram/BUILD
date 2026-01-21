@@ -854,14 +854,14 @@ genrule(
     ]
 )
 
-sh_binary(
-    name = "AddAlternateIcons",
-    data = [
-        "Telegram-iOS/AlternateIcons.plist",
-        "Telegram-iOS/AlternateIcons-iPad.plist",
-    ],
-    srcs = [":GenerateAddAlternateIcons"],
-)
+# sh_binary(
+#     name = "AddAlternateIcons",
+#     data = [
+#         "Telegram-iOS/AlternateIcons.plist",
+#         "Telegram-iOS/AlternateIcons-iPad.plist",
+#     ],
+#     srcs = [":GenerateAddAlternateIcons"],
+# )
 
 plist_fragment(
     name = "TelegramUIInfoPlist",

@@ -22,5 +22,6 @@
             ]
         }
     },
-    "swift.sourcekit-lsp.serverPath": "${workspaceFolder}/build-input/sourcekit-lsp",
+    // "swift.sourcekit-lsp.serverPath": "${workspaceFolder}/build-input/sourcekit-lsp",
+    "swift.sourcekit-lsp.serverPath": "/usr/bin/sourcekit-lsp"
 }

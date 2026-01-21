@@ -668,14 +668,31 @@ public struct PresentationResourcesChat {
         return theme.image(PresentationResourceKey.chatHistoryReactionsButtonImage.rawValue, { theme in
             return generateImage(CGSize(width: 38.0, height: 38.0), contextGenerator: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
-                
+
                 if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Reactions"), color: UIColor.white), let cgImage = image.cgImage {
                     context.draw(cgImage, in: CGRect(origin: CGPoint(x: floor((size.width - image.size.width) / 2.0), y: floor((size.height - image.size.height) / 2.0)), size: image.size))
                 }
             })?.withRenderingMode(.alwaysTemplate)
         })
     }
-    
+
+    public static func chatHistorySummaryButtonImage(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatHistorySummaryButtonImage.rawValue, { theme in
+            return generateImage(CGSize(width: 38.0, height: 38.0), contextGenerator: { size, context in
+                context.clear(CGRect(origin: CGPoint(), size: size))
+
+                if let sparklesImage = UIImage(systemName: "sparkles") {
+                    let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
+                    let configuredImage = sparklesImage.withConfiguration(config)
+                    if let tintedImage = generateTintedImage(image: configuredImage, color: UIColor.white),
+                       let cgImage = tintedImage.cgImage {
+                        context.draw(cgImage, in: CGRect(origin: CGPoint(x: floor((size.width - tintedImage.size.width) / 2.0), y: floor((size.height - tintedImage.size.height) / 2.0)), size: tintedImage.size))
+                    }
+                }
+            })?.withRenderingMode(.alwaysTemplate)
+        })
+    }
+
     public static func chatHistoryNavigationButtonBadgeImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatHistoryNavigationButtonBadgeImage.rawValue, { theme in
             return generateStretchableFilledCircleImage(diameter: 18.0, color: theme.chat.historyNavigation.badgeBackgroundColor, strokeColor: theme.chat.historyNavigation.badgeStrokeColor, strokeWidth: 1.0, backgroundColor: nil)
