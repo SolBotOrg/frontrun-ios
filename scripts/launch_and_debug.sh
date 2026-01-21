@@ -6,8 +6,45 @@ set -e
 # Instead, we have our own script for launching the simulator and lldb.
 # Ideally we should upstream these changes back to rules_apple since they should be useful for everyone.
 
+# Default disk cache path (can be overridden via --disk-cache=<path> or set to empty to disable)
+DEFAULT_DISK_CACHE="$HOME/telegram-bazel-cache"
+
+# Parse arguments
+DISK_CACHE="$DEFAULT_DISK_CACHE"
+for arg in "$@"; do
+    case $arg in
+        --disk-cache=*)
+            DISK_CACHE="${arg#*=}"
+            shift
+            ;;
+        --no-disk-cache)
+            DISK_CACHE=""
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [options]"
+            echo ""
+            echo "Options:"
+            echo "  --disk-cache=<path>  Set custom disk cache path (default: ~/telegram-bazel-cache)"
+            echo "  --no-disk-cache      Disable disk cache"
+            echo "  --help, -h           Show this help message"
+            exit 0
+            ;;
+    esac
+done
+
+# Build disk cache argument
+DISK_CACHE_ARG=""
+if [[ -n "$DISK_CACHE" ]]; then
+    mkdir -p "$DISK_CACHE"
+    DISK_CACHE_ARG="--disk_cache=$DISK_CACHE"
+    echo "Using disk cache: $DISK_CACHE"
+else
+    echo "Disk cache disabled"
+fi
+
 echo "Building..."
-./build-input/bazel-8.4.2-darwin-arm64 build Telegram/Telegram --announce_rc --features=swift.use_global_module_cache --verbose_failures --remote_cache_async --jobs=16 --define=buildNumber=10000 --define=telegramVersion=12.2.1 --disk_cache=/Users/ali/telegram-bazel-cache -c dbg --ios_multi_cpus=sim_arm64 --watchos_cpus=arm64_32 --features=swift.enable_batch_mode
+./build-input/bazel-8.4.2-darwin-arm64 build Telegram/Telegram --announce_rc --features=swift.use_global_module_cache --verbose_failures --remote_cache_async --jobs=16 --define=buildNumber=10000 --define=telegramVersion=12.2.1 ${DISK_CACHE_ARG} -c dbg --ios_multi_cpus=sim_arm64 --watchos_cpus=arm64_32 --features=swift.enable_batch_mode --//Telegram:disableProvisioningProfiles
 chmod -R 777 ./bazel-bin/Telegram
 
 tmp_file=$(pwd)/bazel-bin/Telegram/pid.txt
