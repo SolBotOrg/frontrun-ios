@@ -1153,9 +1153,12 @@ private final class ChatSummaryContentComponent: Component {
                     image.draw(in: rect)
                     let circularImage = UIGraphicsGetImageFromCurrentImageContext()
                     UIGraphicsEndImageContext()
-                    
+
                     self.tokenLogoCache[normalizedAddress] = circularImage
-                    self.componentState?.updated(transition: .immediate)
+                    // Defer state update to next run loop to avoid recursive component updates
+                    Queue.mainQueue().async { [weak self] in
+                        self?.componentState?.updated(transition: .immediate)
+                    }
                 }
                 self.tokenLogoDisposables.removeValue(forKey: normalizedAddress)
             })
@@ -1188,7 +1191,10 @@ private final class ChatSummaryContentComponent: Component {
                     // Store with lowercased key for consistent lookup
                     self.tokenInfoCache[address.lowercased()] = info
                 }
-                self.componentState?.updated(transition: .immediate)
+                // Defer state update to next run loop to avoid recursive component updates
+                Queue.mainQueue().async { [weak self] in
+                    self?.componentState?.updated(transition: .immediate)
+                }
             })
         }
         
