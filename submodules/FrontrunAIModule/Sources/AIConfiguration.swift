@@ -98,12 +98,27 @@ public enum SummaryMessageCount: Codable, Equatable, CaseIterable {
     }
 }
 
+/// Settings specific to each AI provider (baseURL and model)
+public struct ProviderSettings: Codable, Equatable {
+    public var baseURL: String
+    public var model: String
+    
+    public init(baseURL: String = "", model: String = "") {
+        self.baseURL = baseURL
+        self.model = model
+    }
+}
+
 public struct AIConfiguration: Equatable {
     public var provider: AIProvider
     public var apiKey: String
     public var baseURL: String
     public var model: String
     public var enabled: Bool
+    
+    /// Per-provider custom settings storage
+    /// This preserves user's custom baseURL and model when switching between providers
+    public var providerSettings: [String: ProviderSettings]
 
     // Summary settings
     public var summaryMessageCount: SummaryMessageCount
@@ -114,6 +129,33 @@ public struct AIConfiguration: Equatable {
     public var summaryPrompt: String {
         get { return summarySystemPrompt }
         set { summarySystemPrompt = newValue }
+    }
+    
+    /// Save current baseURL and model to the providerSettings for the current provider
+    public mutating func saveCurrentProviderSettings() {
+        providerSettings[provider.rawValue] = ProviderSettings(baseURL: baseURL, model: model)
+    }
+    
+    /// Load saved settings for a provider, or return defaults if none saved
+    public func getSettingsForProvider(_ provider: AIProvider) -> ProviderSettings {
+        if let saved = providerSettings[provider.rawValue], !saved.baseURL.isEmpty {
+            return saved
+        }
+        return ProviderSettings(baseURL: provider.defaultEndpoint, model: provider.defaultModel)
+    }
+    
+    /// Switch to a new provider, preserving current settings and loading the new provider's settings
+    public mutating func switchToProvider(_ newProvider: AIProvider) {
+        // Save current provider's settings first
+        saveCurrentProviderSettings()
+        
+        // Switch provider
+        provider = newProvider
+        
+        // Load new provider's settings (saved or defaults)
+        let settings = getSettingsForProvider(newProvider)
+        baseURL = settings.baseURL
+        model = settings.model
     }
 
     public static let defaultSummarySystemPrompt = """
@@ -192,7 +234,8 @@ If the original message contains a truncated address, find the full address else
         enabled: Bool = false,
         summaryMessageCount: SummaryMessageCount = .hundred,
         summarySystemPrompt: String = "",
-        summaryUserPrompt: String = ""
+        summaryUserPrompt: String = "",
+        providerSettings: [String: ProviderSettings] = [:]
     ) {
         self.provider = provider
         self.apiKey = apiKey
@@ -202,6 +245,7 @@ If the original message contains a truncated address, find the full address else
         self.summaryMessageCount = summaryMessageCount
         self.summarySystemPrompt = summarySystemPrompt
         self.summaryUserPrompt = summaryUserPrompt
+        self.providerSettings = providerSettings
     }
 
     // Coding keys for migration support
@@ -215,6 +259,7 @@ If the original message contains a truncated address, find the full address else
         case summarySystemPrompt
         case summaryUserPrompt
         case summaryPrompt // Legacy key
+        case providerSettings
     }
 }
 
@@ -229,6 +274,7 @@ extension AIConfiguration: Codable {
         enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
         summaryMessageCount = try container.decodeIfPresent(SummaryMessageCount.self, forKey: .summaryMessageCount) ?? .hundred
         summaryUserPrompt = try container.decodeIfPresent(String.self, forKey: .summaryUserPrompt) ?? ""
+        providerSettings = try container.decodeIfPresent([String: ProviderSettings].self, forKey: .providerSettings) ?? [:]
 
         // Handle migration from old summaryPrompt to new summarySystemPrompt
         if let systemPrompt = try container.decodeIfPresent(String.self, forKey: .summarySystemPrompt) {
@@ -252,6 +298,7 @@ extension AIConfiguration: Codable {
         try container.encode(summaryMessageCount, forKey: .summaryMessageCount)
         try container.encode(summarySystemPrompt, forKey: .summarySystemPrompt)
         try container.encode(summaryUserPrompt, forKey: .summaryUserPrompt)
+        try container.encode(providerSettings, forKey: .providerSettings)
     }
 
     public var isValid: Bool {

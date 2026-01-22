@@ -237,9 +237,8 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
         updateProvider: { value in
             updateState { state in
                 var state = state
-                state.configuration.provider = value
-                state.configuration.baseURL = value.defaultEndpoint
-                state.configuration.model = value.defaultModel
+                // Use switchToProvider to preserve custom settings when switching providers
+                state.configuration.switchToProvider(value)
                 AIConfigurationStorage.shared.saveConfiguration(state.configuration)
                 return state
             }
@@ -278,9 +277,8 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                     actionSheet?.dismissAnimated()
                     updateState { state in
                         var state = state
-                        state.configuration.provider = provider
-                        state.configuration.baseURL = provider.defaultEndpoint
-                        state.configuration.model = provider.defaultModel
+                        // Use switchToProvider to preserve custom settings when switching providers
+                        state.configuration.switchToProvider(provider)
                         AIConfigurationStorage.shared.saveConfiguration(state.configuration)
                         return state
                     }
