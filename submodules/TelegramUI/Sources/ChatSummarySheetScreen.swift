@@ -95,6 +95,7 @@ private final class ChatSummarySheetScreenComponent: Component {
         private var disposable: Disposable?
         private var messageIdMap: [Int32: MessageId] = [:]
         private var messagePeerMap: [Int32: Peer] = [:]
+        private var originalMessagesText: String = ""  // For token address fallback
 
         override init(frame: CGRect) {
             super.init(frame: frame)
@@ -160,6 +161,7 @@ private final class ChatSummarySheetScreenComponent: Component {
                         messagePeerMap: self.messagePeerMap,
                         isLoading: self.isLoading,
                         maxHeight: maxContentHeight,
+                        originalMessagesText: self.originalMessagesText,
                         dismiss: { [weak self] in
                             guard let self, let environment = self.environment else { return }
                             self.sheetAnimateOut.invoke(Action { _ in
@@ -330,6 +332,9 @@ private final class ChatSummarySheetScreenComponent: Component {
         }
 
         private func generateAISummary(context: AccountContext, messagesText: String, messageCount: Int, totalMessages: Int) {
+            // Save original messages for token address fallback
+            self.originalMessagesText = messagesText
+            
             let config = AIConfigurationStorage.shared.getConfiguration()
 
             guard config.isValid && config.enabled else {
@@ -477,9 +482,30 @@ private final class ChatSummarySheetScreenComponent: Component {
                 items.append(ActionSheetTextItem(title: "Token: \(shortAddr)\n(No data available)"))
             }
             
+            // Prepare URLs
+            let dexScreenerUrl: String
+            if let info = tokenInfo {
+                dexScreenerUrl = info.getDexScreenerUrl()
+            } else {
+                let chain = address.hasPrefix("0x") ? "ethereum" : "solana"
+                dexScreenerUrl = "https://dexscreener.com/\(chain)/\(address)"
+            }
+            
+            let explorerName = self.getExplorerName(chainId: tokenInfo?.chainId ?? (address.hasPrefix("0x") ? "ethereum" : "solana"))
+            var explorerUrl: String
+            if let info = tokenInfo, let url = info.getExplorerUrl() {
+                explorerUrl = url
+            } else if address.hasPrefix("0x") {
+                explorerUrl = "https://etherscan.io/token/\(address)"
+            } else {
+                explorerUrl = "https://solscan.io/token/\(address)"
+            }
+            
+            let actionSheet = ActionSheetController(presentationData: presentationData)
+            
             // Copy address
-            items.append(ActionSheetButtonItem(title: "Copy Address", color: .accent, action: { [weak controller] in
-                controller?.dismiss(completion: nil)
+            items.append(ActionSheetButtonItem(title: "Copy Address", color: .accent, action: { [weak actionSheet, weak controller] in
+                actionSheet?.dismissAnimated()
                 UIPasteboard.general.string = address
                 
                 if let controller = controller {
@@ -493,39 +519,22 @@ private final class ChatSummarySheetScreenComponent: Component {
                 }
             }))
             
-            // Open in DexScreener (always show, even without tokenInfo)
-            let dexScreenerUrl: String
-            if let info = tokenInfo {
-                dexScreenerUrl = info.getDexScreenerUrl()
-            } else {
-                let chain = address.hasPrefix("0x") ? "ethereum" : "solana"
-                dexScreenerUrl = "https://dexscreener.com/\(chain)/\(address)"
-            }
-            items.append(ActionSheetButtonItem(title: "Open DexScreener", color: .accent, action: { [weak controller] in
-                controller?.dismiss(completion: nil)
+            // Open in DexScreener
+            items.append(ActionSheetButtonItem(title: "Open DexScreener", color: .accent, action: { [weak actionSheet] in
+                actionSheet?.dismissAnimated()
                 if let url = URL(string: dexScreenerUrl) {
                     context.sharedContext.applicationBindings.openUrl(url.absoluteString)
                 }
             }))
             
             // Open in Explorer
-            let explorerName = self.getExplorerName(chainId: tokenInfo?.chainId ?? (address.hasPrefix("0x") ? "ethereum" : "solana"))
-            items.append(ActionSheetButtonItem(title: "Open \(explorerName)", color: .accent, action: { [weak controller] in
-                controller?.dismiss(completion: nil)
-                var urlString: String
-                if let info = tokenInfo, let explorerUrl = info.getExplorerUrl() {
-                    urlString = explorerUrl
-                } else if address.hasPrefix("0x") {
-                    urlString = "https://etherscan.io/token/\(address)"
-                } else {
-                    urlString = "https://solscan.io/token/\(address)"
-                }
-                if let url = URL(string: urlString) {
+            items.append(ActionSheetButtonItem(title: "Open \(explorerName)", color: .accent, action: { [weak actionSheet] in
+                actionSheet?.dismissAnimated()
+                if let url = URL(string: explorerUrl) {
                     context.sharedContext.applicationBindings.openUrl(url.absoluteString)
                 }
             }))
             
-            let actionSheet = ActionSheetController(presentationData: presentationData)
             actionSheet.setItemGroups([
                 ActionSheetItemGroup(items: items),
                 ActionSheetItemGroup(items: [
@@ -578,12 +587,13 @@ private final class ChatSummaryContentComponent: Component {
     let messagePeerMap: [Int32: Peer]
     let isLoading: Bool
     let maxHeight: CGFloat
+    let originalMessagesText: String  // For token address fallback
     let dismiss: () -> Void
     let navigateToMessage: (MessageId) -> Void
     let openSettings: () -> Void
     let showTokenDetail: (String, DexTokenInfo?, CGRect) -> Void
 
-    init(context: AccountContext, peerId: PeerId, theme: PresentationTheme, summaryTitle: String, summaryText: String, truncationNotice: String?, messageIdMap: [Int32: MessageId], messagePeerMap: [Int32: Peer], isLoading: Bool, maxHeight: CGFloat, dismiss: @escaping () -> Void, navigateToMessage: @escaping (MessageId) -> Void, openSettings: @escaping () -> Void, showTokenDetail: @escaping (String, DexTokenInfo?, CGRect) -> Void) {
+    init(context: AccountContext, peerId: PeerId, theme: PresentationTheme, summaryTitle: String, summaryText: String, truncationNotice: String?, messageIdMap: [Int32: MessageId], messagePeerMap: [Int32: Peer], isLoading: Bool, maxHeight: CGFloat, originalMessagesText: String, dismiss: @escaping () -> Void, navigateToMessage: @escaping (MessageId) -> Void, openSettings: @escaping () -> Void, showTokenDetail: @escaping (String, DexTokenInfo?, CGRect) -> Void) {
         self.context = context
         self.peerId = peerId
         self.theme = theme
@@ -594,6 +604,7 @@ private final class ChatSummaryContentComponent: Component {
         self.messagePeerMap = messagePeerMap
         self.isLoading = isLoading
         self.maxHeight = maxHeight
+        self.originalMessagesText = originalMessagesText
         self.dismiss = dismiss
         self.navigateToMessage = navigateToMessage
         self.openSettings = openSettings
@@ -631,6 +642,7 @@ private final class ChatSummaryContentComponent: Component {
         private var messageIdMap: [Int32: MessageId] = [:]
         private var messagePeerMap: [Int32: Peer] = [:]
         private weak var context: AccountContext?
+        private var originalMessagesText: String = ""
         
         private let userNavigationKey = NSAttributedString.Key("TelegramUserNavigation")
         private let tokenNavigationKey = NSAttributedString.Key("TelegramTokenNavigation")
@@ -747,7 +759,18 @@ private final class ChatSummaryContentComponent: Component {
                     continue
                 }
 
-                let address = String(result[addressRange])
+                var address = String(result[addressRange])
+                
+                // Check if address is truncated and try to recover full address
+                if isTruncatedAddress(address) {
+                    if let fullAddress = recoverFullAddress(from: address) {
+                        address = fullAddress
+                    } else {
+                        // Skip this token if we can't recover the full address
+                        continue
+                    }
+                }
+                
                 let placeholder = "{{T\(placeholderIndex)}}"
                 placeholderIndex += 1
                 
@@ -756,6 +779,74 @@ private final class ChatSummaryContentComponent: Component {
             }
 
             return (result, tokens)
+        }
+        
+        /// Check if address appears to be truncated (contains ... or *)
+        private func isTruncatedAddress(_ address: String) -> Bool {
+            return address.contains("...") || address.contains("*") || address.contains("…")
+        }
+        
+        /// Try to recover the full address from original messages using partial match
+        private func recoverFullAddress(from truncatedAddress: String) -> String? {
+            // Extract prefix and suffix from truncated address
+            // e.g. "0x1234...5678" -> prefix="0x1234", suffix="5678"
+            // e.g. "0x1234***5678" -> prefix="0x1234", suffix="5678"
+            
+            let cleanAddress = truncatedAddress
+                .replacingOccurrences(of: "…", with: "...")
+            
+            var prefix = ""
+            var suffix = ""
+            
+            if let range = cleanAddress.range(of: "...") {
+                prefix = String(cleanAddress[..<range.lowerBound])
+                suffix = String(cleanAddress[range.upperBound...])
+            } else if let range = cleanAddress.range(of: "***") {
+                prefix = String(cleanAddress[..<range.lowerBound])
+                suffix = String(cleanAddress[range.upperBound...])
+            } else if cleanAddress.contains("*") {
+                // Find first and last asterisk
+                if let firstStar = cleanAddress.firstIndex(of: "*"),
+                   let lastStar = cleanAddress.lastIndex(of: "*") {
+                    prefix = String(cleanAddress[..<firstStar])
+                    suffix = String(cleanAddress[cleanAddress.index(after: lastStar)...])
+                }
+            }
+            
+            guard !prefix.isEmpty && !suffix.isEmpty else {
+                return nil
+            }
+            
+            // Search in original messages for matching full address
+            let searchText = self.originalMessagesText
+            
+            // Pattern to find full EVM addresses
+            if prefix.hasPrefix("0x") {
+                let evmPattern = "\\b(\(NSRegularExpression.escapedPattern(for: prefix))[a-fA-F0-9]+\(NSRegularExpression.escapedPattern(for: suffix)))\\b"
+                if let regex = try? NSRegularExpression(pattern: evmPattern, options: []),
+                   let match = regex.firstMatch(in: searchText, options: [], range: NSRange(searchText.startIndex..., in: searchText)),
+                   let range = Range(match.range(at: 1), in: searchText) {
+                    let fullAddress = String(searchText[range])
+                    // Validate length for EVM
+                    if fullAddress.count == 42 {
+                        return fullAddress
+                    }
+                }
+            }
+            
+            // Pattern for Solana addresses (base58)
+            let solanaPattern = "\\b(\(NSRegularExpression.escapedPattern(for: prefix))[1-9A-HJ-NP-Za-km-z]+\(NSRegularExpression.escapedPattern(for: suffix)))\\b"
+            if let regex = try? NSRegularExpression(pattern: solanaPattern, options: []),
+               let match = regex.firstMatch(in: searchText, options: [], range: NSRange(searchText.startIndex..., in: searchText)),
+               let range = Range(match.range(at: 1), in: searchText) {
+                let fullAddress = String(searchText[range])
+                // Validate length for Solana (32-44 chars)
+                if fullAddress.count >= 32 && fullAddress.count <= 44 {
+                    return fullAddress
+                }
+            }
+            
+            return nil
         }
 
         private func processUserTags(in text: String) -> (processedText: String, users: [(username: String, messageId: Int32?, placeholder: String)]) {
@@ -1160,6 +1251,7 @@ private final class ChatSummaryContentComponent: Component {
             self.messageIdMap = component.messageIdMap
             self.messagePeerMap = component.messagePeerMap
             self.context = component.context
+            self.originalMessagesText = component.originalMessagesText
             self.componentState = state
             
             // Fetch token info for addresses in the summary

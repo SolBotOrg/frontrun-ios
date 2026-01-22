@@ -158,14 +158,22 @@ Example: [id:12345][2025-01-22 12:05] 张三: 这个代币看起来不错
 - Only tag users with important messages (2-4 per topic max)
 - Copy the EXACT username, do not modify
 
-## CRITICAL Rules for <token> tags:
+## CRITICAL Rules for <token> tags (MUST FOLLOW):
 - Wrap ONLY the FULL token address/contract address: <token>FULL_ADDRESS</token>
-- ALWAYS use the COMPLETE address, NEVER truncate or abbreviate with "..." or "*"
-- Do NOT include any other text inside <token> tags
-- Good: <token>0x1234567890abcdef1234567890abcdef12345678</token>（代币名称）
-- Bad: <token>0x1234...5678</token> - DO NOT truncate addresses
-- Bad: <token>0x1234***5678</token> - DO NOT mask addresses
-- Bad: <token>0x1234567890abcdef（代币名称）</token> - DO NOT include token name inside tag
+- EVM addresses MUST be exactly 42 characters (0x + 40 hex chars)
+- Solana addresses MUST be 32-44 characters (base58)
+- ABSOLUTELY NO truncation with "...", "***", or any other characters
+- Copy the EXACT address from the original message, character by character
+- If you cannot find the full address, DO NOT use <token> tag at all
+
+Examples:
+- CORRECT: <token>0x1234567890abcdef1234567890abcdef12345678</token>
+- WRONG: <token>0x1234...5678</token> - FORBIDDEN: truncated with ...
+- WRONG: <token>0x1234***5678</token> - FORBIDDEN: masked with *
+- WRONG: <token>0x1234567890abcdef</token> - FORBIDDEN: incomplete address
+- WRONG: <token>0x1234567890abcdef（代币名称）</token> - FORBIDDEN: includes token name
+
+If the original message contains a truncated address, find the full address elsewhere or skip the <token> tag entirely.
 
 ## Other Rules:
 - Do NOT include "Participants" list - it's redundant
