@@ -34,21 +34,58 @@ public enum AIProvider: String, Codable, CaseIterable {
         case .openai:
             return "gpt-4o-mini"
         case .anthropic:
-            return "claude-sonnet-4-20250514"
+            return "claude-sonnet-4-5-20250929"
         case .custom:
             return ""
         }
     }
 }
 
-public enum SummaryMessageCount: Int, Codable, CaseIterable {
-    case fifty = 50
-    case hundred = 100
-    case twoHundred = 200
-    case fiveHundred = 500
+public enum SummaryMessageCount: Codable, Equatable, CaseIterable {
+    case fifty
+    case hundred
+    case twoHundred
+    case fiveHundred
+    case custom(Int)
+
+    public static var allCases: [SummaryMessageCount] {
+        return [.fifty, .hundred, .twoHundred, .fiveHundred]
+    }
+
+    public var value: Int {
+        switch self {
+        case .fifty: return 50
+        case .hundred: return 100
+        case .twoHundred: return 200
+        case .fiveHundred: return 500
+        case .custom(let count): return count
+        }
+    }
 
     public var displayName: String {
-        return "\(self.rawValue) messages"
+        switch self {
+        case .custom(let count):
+            return "\(count) messages (custom)"
+        default:
+            return "\(self.value) messages"
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(Int.self)
+        switch value {
+        case 50: self = .fifty
+        case 100: self = .hundred
+        case 200: self = .twoHundred
+        case 500: self = .fiveHundred
+        default: self = .custom(value)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.value)
     }
 }
 

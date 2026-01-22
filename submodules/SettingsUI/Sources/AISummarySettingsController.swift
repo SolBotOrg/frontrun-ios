@@ -8,6 +8,7 @@ import TelegramPresentationData
 import ItemListUI
 import PresentationDataUtils
 import AccountContext
+import PromptUI
 import AIModule
 
 private final class AISummarySettingsControllerArguments {
@@ -158,6 +159,31 @@ public func aiSummarySettingsController(context: AccountContext) -> ViewControll
                     }
                 }))
             }
+
+            // Add custom option
+            items.append(ActionSheetButtonItem(title: "Custom...", action: { [weak actionSheet] in
+                actionSheet?.dismissAnimated()
+
+                let currentValue = stateValue.with { $0 }.configuration.summaryMessageCount.value
+                let promptVC = promptController(
+                    context: context,
+                    text: "Custom Message Count",
+                    subtitle: "Enter the number of messages to include in the summary:",
+                    value: "\(currentValue)",
+                    placeholder: "Enter number",
+                    apply: { value in
+                        if let text = value, let count = Int(text), count > 0 {
+                            updateState { state in
+                                var state = state
+                                state.configuration.summaryMessageCount = .custom(count)
+                                AIConfigurationStorage.shared.saveConfiguration(state.configuration)
+                                return state
+                            }
+                        }
+                    }
+                )
+                presentControllerImpl?(promptVC, nil)
+            }))
 
             actionSheet.setItemGroups([
                 ActionSheetItemGroup(items: items),

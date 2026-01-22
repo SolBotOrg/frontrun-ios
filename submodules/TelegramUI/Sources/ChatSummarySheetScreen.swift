@@ -241,7 +241,7 @@ private final class ChatSummarySheetScreenComponent: Component {
 
         private func fetchMessagesAndGenerateSummary(context: AccountContext, peerId: PeerId) {
             let config = AIConfigurationStorage.shared.getConfiguration()
-            let messageCount = config.summaryMessageCount.rawValue
+            let messageCount = config.summaryMessageCount.value
 
             let messagesSignal = context.account.postbox.aroundMessageHistoryViewForLocation(
                 .peer(peerId: peerId, threadId: nil),

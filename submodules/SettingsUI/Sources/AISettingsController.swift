@@ -8,6 +8,7 @@ import TelegramPresentationData
 import ItemListUI
 import PresentationDataUtils
 import AccountContext
+import PromptUI
 import AIModule
 
 private final class AISettingsControllerArguments {
@@ -18,6 +19,7 @@ private final class AISettingsControllerArguments {
     let updateBaseURL: (String) -> Void
     let updateModel: (String) -> Void
     let selectProvider: () -> Void
+    let selectModel: () -> Void
 
     init(
         context: AccountContext,
@@ -26,7 +28,8 @@ private final class AISettingsControllerArguments {
         updateAPIKey: @escaping (String) -> Void,
         updateBaseURL: @escaping (String) -> Void,
         updateModel: @escaping (String) -> Void,
-        selectProvider: @escaping () -> Void
+        selectProvider: @escaping () -> Void,
+        selectModel: @escaping () -> Void
     ) {
         self.context = context
         self.updateEnabled = updateEnabled
@@ -35,6 +38,7 @@ private final class AISettingsControllerArguments {
         self.updateBaseURL = updateBaseURL
         self.updateModel = updateModel
         self.selectProvider = selectProvider
+        self.selectModel = selectModel
     }
 }
 
@@ -58,7 +62,7 @@ private enum AISettingsEntry: ItemListNodeEntry {
 
     case endpointHeader(PresentationTheme, String)
     case baseURL(PresentationTheme, String, String)
-    case model(PresentationTheme, String, String)
+    case model(PresentationTheme, String, AIProvider)
     case endpointInfo(PresentationTheme, String)
 
     var section: ItemListSectionId {
@@ -134,10 +138,10 @@ private enum AISettingsEntry: ItemListNodeEntry {
             return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: "Base URL"), text: text, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), sectionId: self.section, textUpdated: { value in
                 arguments.updateBaseURL(value)
             }, action: {})
-        case let .model(_, placeholder, text):
-            return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: "Model"), text: text, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), sectionId: self.section, textUpdated: { value in
-                arguments.updateModel(value)
-            }, action: {})
+        case let .model(_, currentModel, _):
+            return ItemListDisclosureItem(presentationData: presentationData, title: "Model", label: currentModel, sectionId: self.section, style: .blocks, action: {
+                arguments.selectModel()
+            })
         case let .endpointInfo(_, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         }
@@ -180,7 +184,7 @@ private func aiSettingsControllerEntries(
     // Endpoint section
     entries.append(.endpointHeader(presentationData.theme, "ENDPOINT"))
     entries.append(.baseURL(presentationData.theme, state.configuration.provider.defaultEndpoint, state.configuration.baseURL))
-    entries.append(.model(presentationData.theme, state.configuration.provider.defaultModel, state.configuration.model))
+    entries.append(.model(presentationData.theme, state.configuration.model, state.configuration.provider))
     entries.append(.endpointInfo(presentationData.theme, "Customize the API endpoint and model if needed."))
 
     return entries
@@ -246,7 +250,7 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
         selectProvider: {
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             let actionSheet = ActionSheetController(presentationData: presentationData)
-            
+
             var items: [ActionSheetItem] = []
             for provider in AIProvider.allCases {
                 items.append(ActionSheetButtonItem(title: provider.displayName, action: { [weak actionSheet] in
@@ -261,7 +265,7 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                     }
                 }))
             }
-            
+
             actionSheet.setItemGroups([
                 ActionSheetItemGroup(items: items),
                 ActionSheetItemGroup(items: [
@@ -270,7 +274,80 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                     })
                 ])
             ])
-            
+
+            presentControllerImpl?(actionSheet, nil)
+        },
+        selectModel: {
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            let currentState = stateValue.with { $0 }
+            let actionSheet = ActionSheetController(presentationData: presentationData)
+
+            let models: [(id: String, name: String)]
+            switch currentState.configuration.provider {
+            case .anthropic:
+                models = [
+                    ("claude-sonnet-4-5-20250929", "Claude Sonnet 4.5"),
+                    ("claude-opus-4-5-20251101", "Claude Opus 4.5"),
+                    ("claude-haiku-4-5-20251001", "Claude Haiku 4.5")
+                ]
+            case .openai:
+                models = [
+                    ("gpt-4o-mini", "GPT-4o Mini"),
+                    ("gpt-4o", "GPT-4o"),
+                    ("gpt-4-turbo", "GPT-4 Turbo"),
+                    ("gpt-3.5-turbo", "GPT-3.5 Turbo")
+                ]
+            case .custom:
+                models = []
+            }
+
+            var items: [ActionSheetItem] = []
+            for model in models {
+                items.append(ActionSheetButtonItem(title: model.name, action: { [weak actionSheet] in
+                    actionSheet?.dismissAnimated()
+                    updateState { state in
+                        var state = state
+                        state.configuration.model = model.id
+                        AIConfigurationStorage.shared.saveConfiguration(state.configuration)
+                        return state
+                    }
+                }))
+            }
+
+            if currentState.configuration.provider == .custom || models.isEmpty {
+                // For custom provider, allow text input
+                items.append(ActionSheetButtonItem(title: "Enter Custom Model...", action: { [weak actionSheet] in
+                    actionSheet?.dismissAnimated()
+
+                    let promptVC = promptController(
+                        context: context,
+                        text: "Custom Model",
+                        value: currentState.configuration.model,
+                        placeholder: "Enter model identifier",
+                        apply: { value in
+                            if let text = value, !text.isEmpty {
+                                updateState { state in
+                                    var state = state
+                                    state.configuration.model = text
+                                    AIConfigurationStorage.shared.saveConfiguration(state.configuration)
+                                    return state
+                                }
+                            }
+                        }
+                    )
+                    presentControllerImpl?(promptVC, nil)
+                }))
+            }
+
+            actionSheet.setItemGroups([
+                ActionSheetItemGroup(items: items),
+                ActionSheetItemGroup(items: [
+                    ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
+                        actionSheet?.dismissAnimated()
+                    })
+                ])
+            ])
+
             presentControllerImpl?(actionSheet, nil)
         }
     )
