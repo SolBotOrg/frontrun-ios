@@ -47,6 +47,7 @@ import AppBundle
 import LocalizedPeerData
 import PhoneNumberFormat
 import SettingsUI
+import AIModule
 import UrlWhitelist
 import TelegramIntents
 import TooltipUI
@@ -1550,7 +1551,27 @@ extension ChatControllerImpl {
                 }))
             }
         }
-        
+
+        self.chatDisplayNode.navigateButtons.summaryPressed = { [weak self] in
+            guard let strongSelf = self, strongSelf.isNodeLoaded, let peerId = strongSelf.chatLocation.peerId else {
+                return
+            }
+
+            // Check if AI is configured
+            let config = AIConfigurationStorage.shared.getConfiguration()
+            if !config.enabled || !config.isValid {
+                // AI not configured, go to AI settings
+                let settingsController = aiSettingsController(context: strongSelf.context)
+                strongSelf.push(settingsController)
+            } else {
+                let controller = ChatSummarySheetScreen(context: strongSelf.context, peerId: peerId)
+                controller.parentController = { [weak strongSelf] in
+                    return strongSelf
+                }
+                strongSelf.present(controller, in: .window(.root))
+            }
+        }
+
         self.chatDisplayNode.navigateButtons.reactionsButton.activated = { [weak self] gesture, _ in
             guard let strongSelf = self else {
                 gesture.cancel()

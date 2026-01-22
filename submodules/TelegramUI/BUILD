@@ -50,6 +50,7 @@ swift_library(
     ],
     deps = [
         "//third-party/recaptcha:RecaptchaEnterpriseSDK",
+        "//submodules/AIModule:AIModule",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/SSignalKit/SSignalKit:SSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
@@ -429,6 +430,7 @@ swift_library(
         "//submodules/AudioWaveform",
         "//submodules/PromptUI",
         "//submodules/Components/BundleIconComponent",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
         "//submodules/TelegramUI/Components/Chat/TopMessageReactions",
         "//submodules/TelegramUI/Components/Chat/SavedTagNameAlertController",
         "//submodules/TelegramUI/Components/Chat/ChatInlineSearchResultsListComponent",

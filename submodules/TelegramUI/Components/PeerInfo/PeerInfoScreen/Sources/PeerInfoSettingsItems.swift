@@ -247,7 +247,11 @@ func settingsItems(data: PeerInfoScreenData?, context: AccountContext, presentat
     items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 4, label: .text(languageName.isEmpty ? presentationData.strings.Localization_LanguageName : languageName), text: presentationData.strings.Settings_AppLanguage, icon: PresentationResourcesSettings.language, action: {
         interaction.openSettings(.language)
     }))
-    
+
+    items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 7, text: "AI Assistant", icon: PresentationResourcesSettings.ai, action: {
+        interaction.openSettings(.aiSettings)
+    }))
+
     let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
     let isPremiumDisabled = premiumConfiguration.isPremiumDisabled
     if !isPremiumDisabled || context.isPremium {

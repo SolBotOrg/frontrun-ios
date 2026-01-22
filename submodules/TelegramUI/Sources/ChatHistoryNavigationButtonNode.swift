@@ -16,6 +16,7 @@ enum ChatHistoryNavigationButtonType {
     case up
     case mentions
     case reactions
+    case summary
 }
 
 class ChatHistoryNavigationButtonNode: ContextControllerSourceNode {
@@ -67,6 +68,8 @@ class ChatHistoryNavigationButtonNode: ContextControllerSourceNode {
             self.imageView.image = PresentationResourcesChat.chatHistoryMentionsButtonImage(theme)
         case .reactions:
             self.imageView.image = PresentationResourcesChat.chatHistoryReactionsButtonImage(theme)
+        case .summary:
+            self.imageView.image = PresentationResourcesChat.chatHistorySummaryButtonImage(theme)
         }
         
         self.badgeBackgroundView = GlassBackgroundView()
@@ -122,6 +125,8 @@ class ChatHistoryNavigationButtonNode: ContextControllerSourceNode {
                 self.imageView.image = PresentationResourcesChat.chatHistoryMentionsButtonImage(theme)
             case .reactions:
                 self.imageView.image = PresentationResourcesChat.chatHistoryReactionsButtonImage(theme)
+            case .summary:
+                self.imageView.image = PresentationResourcesChat.chatHistorySummaryButtonImage(theme)
             }
             
             self.badgeBackgroundView.update(size: self.badgeBackgroundView.bounds.size, cornerRadius: self.badgeBackgroundView.bounds.height * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .custom, color: theme.chat.inputPanel.actionControlFillColor), transition: .immediate)
