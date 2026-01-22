@@ -82,4 +82,7 @@ xcode-files
 !/.claude/skills/frontrun-*/**
 /buildbox/*
 build-system/development-configuration.json
+build-system/frontrun-distribution-config.json
 bazel-frontrun-ios
+# Provisioning profiles
+build-system/frontrun-codesigning/
