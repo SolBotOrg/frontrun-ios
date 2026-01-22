@@ -77,6 +77,9 @@ spm-files
 xcode-files
 .bsp/**
 /.claude/
+!/.claude/skills/
+!/.claude/skills/frontrun-*/
+!/.claude/skills/frontrun-*/**
 /buildbox/*
 build-system/development-configuration.json
 bazel-frontrun-ios
