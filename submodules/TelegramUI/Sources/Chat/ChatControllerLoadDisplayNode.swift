@@ -47,7 +47,7 @@ import AppBundle
 import LocalizedPeerData
 import PhoneNumberFormat
 import SettingsUI
-import AIModule
+import FrontrunAIModule
 import UrlWhitelist
 import TelegramIntents
 import TooltipUI

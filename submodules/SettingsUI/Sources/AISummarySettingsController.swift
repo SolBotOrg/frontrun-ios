@@ -9,30 +9,30 @@ import ItemListUI
 import PresentationDataUtils
 import AccountContext
 import PromptUI
-import AIModule
+import FrontrunAIModule
 
 private final class AISummarySettingsControllerArguments {
     let context: AccountContext
     let selectMessageCount: () -> Void
-    let updatePrompt: (String) -> Void
-    let resetPrompt: () -> Void
+    let updateUserPrompt: (String) -> Void
+    let resetUserPrompt: () -> Void
 
     init(
         context: AccountContext,
         selectMessageCount: @escaping () -> Void,
-        updatePrompt: @escaping (String) -> Void,
-        resetPrompt: @escaping () -> Void
+        updateUserPrompt: @escaping (String) -> Void,
+        resetUserPrompt: @escaping () -> Void
     ) {
         self.context = context
         self.selectMessageCount = selectMessageCount
-        self.updatePrompt = updatePrompt
-        self.resetPrompt = resetPrompt
+        self.updateUserPrompt = updateUserPrompt
+        self.resetUserPrompt = resetUserPrompt
     }
 }
 
 private enum AISummarySettingsSection: Int32 {
     case messageCount
-    case prompt
+    case userPrompt
 }
 
 private enum AISummarySettingsEntry: ItemListNodeEntry {
@@ -40,17 +40,17 @@ private enum AISummarySettingsEntry: ItemListNodeEntry {
     case messageCount(PresentationTheme, String, SummaryMessageCount)
     case messageCountInfo(PresentationTheme, String)
 
-    case promptHeader(PresentationTheme, String)
-    case prompt(PresentationTheme, String, String)
-    case promptInfo(PresentationTheme, String)
-    case resetPrompt(PresentationTheme, String)
+    case userPromptHeader(PresentationTheme, String)
+    case userPrompt(PresentationTheme, String, String)
+    case userPromptInfo(PresentationTheme, String)
+    case resetUserPrompt(PresentationTheme, String)
 
     var section: ItemListSectionId {
         switch self {
         case .messageCountHeader, .messageCount, .messageCountInfo:
             return AISummarySettingsSection.messageCount.rawValue
-        case .promptHeader, .prompt, .promptInfo, .resetPrompt:
-            return AISummarySettingsSection.prompt.rawValue
+        case .userPromptHeader, .userPrompt, .userPromptInfo, .resetUserPrompt:
+            return AISummarySettingsSection.userPrompt.rawValue
         }
     }
 
@@ -62,13 +62,13 @@ private enum AISummarySettingsEntry: ItemListNodeEntry {
             return 1
         case .messageCountInfo:
             return 2
-        case .promptHeader:
+        case .userPromptHeader:
             return 3
-        case .prompt:
+        case .userPrompt:
             return 4
-        case .promptInfo:
+        case .userPromptInfo:
             return 5
-        case .resetPrompt:
+        case .resetUserPrompt:
             return 6
         }
     }
@@ -88,17 +88,17 @@ private enum AISummarySettingsEntry: ItemListNodeEntry {
             })
         case let .messageCountInfo(_, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
-        case let .promptHeader(_, text):
+        case let .userPromptHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
-        case let .prompt(_, placeholder, text):
-            return ItemListMultilineInputItem(presentationData: presentationData, text: text, placeholder: placeholder, maxLength: nil, sectionId: self.section, style: .blocks, minimalHeight: 120.0, textUpdated: { value in
-                arguments.updatePrompt(value)
+        case let .userPrompt(_, placeholder, text):
+            return ItemListMultilineInputItem(presentationData: presentationData, text: text, placeholder: placeholder, maxLength: nil, sectionId: self.section, style: .blocks, minimalHeight: 80.0, textUpdated: { value in
+                arguments.updateUserPrompt(value)
             })
-        case let .promptInfo(_, text):
+        case let .userPromptInfo(_, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
-        case let .resetPrompt(_, text):
+        case let .resetUserPrompt(_, text):
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
-                arguments.resetPrompt()
+                arguments.resetUserPrompt()
             })
         }
     }
@@ -117,13 +117,13 @@ private func aiSummarySettingsControllerEntries(
     // Message count section
     entries.append(.messageCountHeader(presentationData.theme, "MESSAGE COUNT"))
     entries.append(.messageCount(presentationData.theme, "Messages to Summarize", state.configuration.summaryMessageCount))
-    entries.append(.messageCountInfo(presentationData.theme, "The number of recent messages to include when generating the summary."))
+    entries.append(.messageCountInfo(presentationData.theme, "The number of recent messages to include (100-3000). Messages will be automatically truncated if they exceed the model's context limit."))
 
-    // Prompt section
-    entries.append(.promptHeader(presentationData.theme, "CUSTOM PROMPT"))
-    entries.append(.prompt(presentationData.theme, "Enter custom prompt...", state.configuration.summaryPrompt))
-    entries.append(.promptInfo(presentationData.theme, "Customize the AI prompt used for generating summaries. Leave empty to use the default prompt."))
-    entries.append(.resetPrompt(presentationData.theme, "Reset to Default Prompt"))
+    // User Prompt section
+    entries.append(.userPromptHeader(presentationData.theme, "CUSTOM PROMPT (OPTIONAL)"))
+    entries.append(.userPrompt(presentationData.theme, "Additional instructions...", state.configuration.summaryUserPrompt))
+    entries.append(.userPromptInfo(presentationData.theme, "Additional instructions that will be prepended to the messages. Custom prompts take higher priority and can customize the summary output."))
+    entries.append(.resetUserPrompt(presentationData.theme, "Clear Custom Prompt"))
 
     return entries
 }
@@ -168,14 +168,15 @@ public func aiSummarySettingsController(context: AccountContext) -> ViewControll
                 let promptVC = promptController(
                     context: context,
                     text: "Custom Message Count",
-                    subtitle: "Enter the number of messages to include in the summary:",
+                    subtitle: "Enter the number of messages (100-3000):",
                     value: "\(currentValue)",
                     placeholder: "Enter number",
                     apply: { value in
-                        if let text = value, let count = Int(text), count > 0 {
+                        if let text = value, let count = Int(text) {
+                            let clampedCount = min(max(count, SummaryMessageCount.minValue), SummaryMessageCount.maxValue)
                             updateState { state in
                                 var state = state
-                                state.configuration.summaryMessageCount = .custom(count)
+                                state.configuration.summaryMessageCount = .custom(clampedCount)
                                 AIConfigurationStorage.shared.saveConfiguration(state.configuration)
                                 return state
                             }
@@ -196,18 +197,18 @@ public func aiSummarySettingsController(context: AccountContext) -> ViewControll
 
             presentControllerImpl?(actionSheet, nil)
         },
-        updatePrompt: { value in
+        updateUserPrompt: { value in
             updateState { state in
                 var state = state
-                state.configuration.summaryPrompt = value
+                state.configuration.summaryUserPrompt = value
                 AIConfigurationStorage.shared.saveConfiguration(state.configuration)
                 return state
             }
         },
-        resetPrompt: {
+        resetUserPrompt: {
             updateState { state in
                 var state = state
-                state.configuration.summaryPrompt = AIConfiguration.defaultSummaryPrompt
+                state.configuration.summaryUserPrompt = ""
                 AIConfigurationStorage.shared.saveConfiguration(state.configuration)
                 return state
             }
