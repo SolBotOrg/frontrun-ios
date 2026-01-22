@@ -1,8 +1,8 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 swift_library(
-    name = "AIModule",
-    module_name = "AIModule",
+    name = "FrontrunCryptoModule",
+    module_name = "FrontrunCryptoModule",
     srcs = glob([
         "Sources/**/*.swift",
     ]),
@@ -11,7 +11,6 @@ swift_library(
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
-        "//submodules/Postbox:Postbox",
     ],
     visibility = [
         "//visibility:public",

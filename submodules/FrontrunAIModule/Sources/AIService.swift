@@ -43,15 +43,8 @@ private class StreamingDelegate: NSObject, URLSessionDataDelegate {
         receivedData.append(data)
 
         guard let dataString = String(data: data, encoding: .utf8) else {
-            #if DEBUG
-            print("[AIService] Failed to decode data as UTF-8")
-            #endif
             return
         }
-
-        #if DEBUG
-        print("[AIService] Received data: \(dataString.prefix(200))...")
-        #endif
 
         let lines = dataString.components(separatedBy: "\n")
         for line in lines {
