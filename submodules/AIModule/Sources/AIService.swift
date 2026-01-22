@@ -132,11 +132,114 @@ private class StreamingDelegate: NSObject, URLSessionDataDelegate {
     }
 }
 
+public struct AIModel {
+    public let id: String
+    public let name: String
+    
+    public init(id: String, name: String) {
+        self.id = id
+        self.name = name
+    }
+}
+
 public final class AIService {
     private let configuration: AIConfiguration
 
     public init(configuration: AIConfiguration) {
         self.configuration = configuration
+    }
+    
+    public static func fetchModels(baseURL: String, apiKey: String, provider: AIProvider) -> Signal<[AIModel], AIError> {
+        return Signal { subscriber in
+            var urlString = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Remove trailing slash
+            if urlString.hasSuffix("/") {
+                urlString = String(urlString.dropLast())
+            }
+            
+            // Build the models endpoint URL
+            switch provider {
+            case .openai, .custom:
+                // Remove /chat/completions if present
+                if urlString.hasSuffix("/chat/completions") {
+                    urlString = String(urlString.dropLast("/chat/completions".count))
+                }
+                // Add /v1 if not present
+                if !urlString.contains("/v1") {
+                    urlString += "/v1"
+                }
+                urlString += "/models"
+            case .anthropic:
+                // Anthropic doesn't have a public models endpoint, return empty
+                subscriber.putNext([])
+                subscriber.putCompletion()
+                return EmptyDisposable
+            }
+            
+            guard let url = URL(string: urlString) else {
+                subscriber.putError(.invalidConfiguration)
+                return EmptyDisposable
+            }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            
+            let task = URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    subscriber.putError(.networkError(error))
+                    return
+                }
+                
+                guard let data = data else {
+                    subscriber.putError(.invalidResponse)
+                    return
+                }
+                
+                // Check HTTP status code
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+                    if let errorString = String(data: data, encoding: .utf8),
+                       let jsonData = errorString.data(using: .utf8),
+                       let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                       let error = json["error"] as? [String: Any],
+                       let message = error["message"] as? String {
+                        subscriber.putError(.apiError(message))
+                    } else {
+                        subscriber.putError(.apiError("HTTP \(httpResponse.statusCode)"))
+                    }
+                    return
+                }
+                
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let dataArray = json["data"] as? [[String: Any]] else {
+                    subscriber.putError(.decodingError)
+                    return
+                }
+                
+                var models: [AIModel] = []
+                for item in dataArray {
+                    if let id = item["id"] as? String {
+                        // Use id as name, or get owned_by for more context
+                        let ownedBy = item["owned_by"] as? String ?? ""
+                        let displayName = ownedBy.isEmpty ? id : "\(id) (\(ownedBy))"
+                        models.append(AIModel(id: id, name: displayName))
+                    }
+                }
+                
+                // Sort models alphabetically
+                models.sort { $0.id < $1.id }
+                
+                subscriber.putNext(models)
+                subscriber.putCompletion()
+            }
+            
+            task.resume()
+            
+            return ActionDisposable {
+                task.cancel()
+            }
+        }
     }
 
     public func sendMessage(

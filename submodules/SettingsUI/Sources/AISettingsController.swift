@@ -10,6 +10,7 @@ import PresentationDataUtils
 import AccountContext
 import PromptUI
 import AIModule
+import SearchableSelectionScreen
 
 private final class AISettingsControllerArguments {
     let context: AccountContext
@@ -20,6 +21,7 @@ private final class AISettingsControllerArguments {
     let updateModel: (String) -> Void
     let selectProvider: () -> Void
     let selectModel: () -> Void
+    let fetchModels: () -> Void
 
     init(
         context: AccountContext,
@@ -29,7 +31,8 @@ private final class AISettingsControllerArguments {
         updateBaseURL: @escaping (String) -> Void,
         updateModel: @escaping (String) -> Void,
         selectProvider: @escaping () -> Void,
-        selectModel: @escaping () -> Void
+        selectModel: @escaping () -> Void,
+        fetchModels: @escaping () -> Void
     ) {
         self.context = context
         self.updateEnabled = updateEnabled
@@ -39,6 +42,7 @@ private final class AISettingsControllerArguments {
         self.updateModel = updateModel
         self.selectProvider = selectProvider
         self.selectModel = selectModel
+        self.fetchModels = fetchModels
     }
 }
 
@@ -63,6 +67,7 @@ private enum AISettingsEntry: ItemListNodeEntry {
     case endpointHeader(PresentationTheme, String)
     case baseURL(PresentationTheme, String, String)
     case model(PresentationTheme, String, AIProvider)
+    case fetchModels(PresentationTheme, Bool)
     case endpointInfo(PresentationTheme, String)
 
     var section: ItemListSectionId {
@@ -73,7 +78,7 @@ private enum AISettingsEntry: ItemListNodeEntry {
             return AISettingsSection.provider.rawValue
         case .apiKeyHeader, .apiKey, .apiKeyInfo:
             return AISettingsSection.apiKey.rawValue
-        case .endpointHeader, .baseURL, .model, .endpointInfo:
+        case .endpointHeader, .baseURL, .model, .fetchModels, .endpointInfo:
             return AISettingsSection.endpoint.rawValue
         }
     }
@@ -100,8 +105,10 @@ private enum AISettingsEntry: ItemListNodeEntry {
             return 8
         case .model:
             return 9
-        case .endpointInfo:
+        case .fetchModels:
             return 10
+        case .endpointInfo:
+            return 11
         }
     }
 
@@ -113,7 +120,7 @@ private enum AISettingsEntry: ItemListNodeEntry {
         let arguments = arguments as! AISettingsControllerArguments
         switch self {
         case let .enabled(_, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updateEnabled(value)
             })
         case let .enabledInfo(_, text):
@@ -121,13 +128,13 @@ private enum AISettingsEntry: ItemListNodeEntry {
         case let .providerHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .provider(_, text, value):
-            return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value.displayName, sectionId: self.section, style: .blocks, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: value.displayName, sectionId: self.section, style: .blocks, action: {
                 arguments.selectProvider()
             })
         case let .apiKeyHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .apiKey(_, placeholder, text):
-            return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: ""), text: text, placeholder: placeholder, type: .password, sectionId: self.section, textUpdated: { value in
+            return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: ""), text: text, placeholder: placeholder, type: .password, sectionId: self.section, textUpdated: { value in
                 arguments.updateAPIKey(value)
             }, action: {})
         case let .apiKeyInfo(_, text):
@@ -135,12 +142,16 @@ private enum AISettingsEntry: ItemListNodeEntry {
         case let .endpointHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .baseURL(_, placeholder, text):
-            return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: "Base URL"), text: text, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), sectionId: self.section, textUpdated: { value in
+            return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: "Base URL", attributes: [.font: Font.regular(presentationData.fontSize.itemListBaseFontSize), .foregroundColor: presentationData.theme.list.itemPrimaryTextColor]), text: text, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), alignment: .right, spacing: 16.0, sectionId: self.section, textUpdated: { value in
                 arguments.updateBaseURL(value)
             }, action: {})
         case let .model(_, currentModel, _):
-            return ItemListDisclosureItem(presentationData: presentationData, title: "Model", label: currentModel, sectionId: self.section, style: .blocks, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: "Model", label: currentModel, sectionId: self.section, style: .blocks, action: {
                 arguments.selectModel()
+            })
+        case let .fetchModels(_, isLoading):
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: isLoading ? "Fetching Models..." : "Fetch Available Models", kind: isLoading ? .disabled : .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                arguments.fetchModels()
             })
         case let .endpointInfo(_, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
@@ -150,6 +161,14 @@ private enum AISettingsEntry: ItemListNodeEntry {
 
 private struct AISettingsControllerState: Equatable {
     var configuration: AIConfiguration
+    var isFetchingModels: Bool = false
+    var fetchedModels: [(id: String, name: String)] = []
+    
+    static func == (lhs: AISettingsControllerState, rhs: AISettingsControllerState) -> Bool {
+        return lhs.configuration == rhs.configuration &&
+               lhs.isFetchingModels == rhs.isFetchingModels &&
+               lhs.fetchedModels.map { $0.id } == rhs.fetchedModels.map { $0.id }
+    }
 }
 
 private func aiSettingsControllerEntries(
@@ -185,7 +204,8 @@ private func aiSettingsControllerEntries(
     entries.append(.endpointHeader(presentationData.theme, "ENDPOINT"))
     entries.append(.baseURL(presentationData.theme, state.configuration.provider.defaultEndpoint, state.configuration.baseURL))
     entries.append(.model(presentationData.theme, state.configuration.model, state.configuration.provider))
-    entries.append(.endpointInfo(presentationData.theme, "Customize the API endpoint and model if needed."))
+    entries.append(.fetchModels(presentationData.theme, state.isFetchingModels))
+    entries.append(.endpointInfo(presentationData.theme, "Customize the API endpoint and model if needed. Tap 'Fetch Available Models' to get the model list from the server."))
 
     return entries
 }
@@ -202,6 +222,7 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
     }
 
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
+    var pushControllerImpl: ((ViewController) -> Void)?
 
     let arguments = AISettingsControllerArguments(
         context: context,
@@ -280,42 +301,74 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
         selectModel: {
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             let currentState = stateValue.with { $0 }
-            let actionSheet = ActionSheetController(presentationData: presentationData)
 
-            let models: [(id: String, name: String)]
-            switch currentState.configuration.provider {
-            case .anthropic:
-                models = [
-                    ("claude-sonnet-4-5-20250929", "Claude Sonnet 4.5"),
-                    ("claude-opus-4-5-20251101", "Claude Opus 4.5"),
-                    ("claude-haiku-4-5-20251001", "Claude Haiku 4.5")
-                ]
-            case .openai:
-                models = [
-                    ("gpt-4o-mini", "GPT-4o Mini"),
-                    ("gpt-4o", "GPT-4o"),
-                    ("gpt-4-turbo", "GPT-4 Turbo"),
-                    ("gpt-3.5-turbo", "GPT-3.5 Turbo")
-                ]
-            case .custom:
-                models = []
+            // Use fetched models if available, otherwise fall back to defaults
+            var models: [(id: String, name: String)]
+            if !currentState.fetchedModels.isEmpty {
+                models = currentState.fetchedModels
+            } else {
+                switch currentState.configuration.provider {
+                case .anthropic:
+                    models = [
+                        ("claude-sonnet-4-5-20250929", "Claude Sonnet 4.5"),
+                        ("claude-opus-4-5-20251101", "Claude Opus 4.5"),
+                        ("claude-haiku-4-5-20251001", "Claude Haiku 4.5")
+                    ]
+                case .openai:
+                    models = [
+                        ("gpt-4o-mini", "GPT-4o Mini"),
+                        ("gpt-4o", "GPT-4o"),
+                        ("gpt-4-turbo", "GPT-4 Turbo"),
+                        ("gpt-3.5-turbo", "GPT-3.5 Turbo")
+                    ]
+                case .custom:
+                    models = []
+                }
             }
 
-            var items: [ActionSheetItem] = []
-            for model in models {
-                items.append(ActionSheetButtonItem(title: model.name, action: { [weak actionSheet] in
-                    actionSheet?.dismissAnimated()
-                    updateState { state in
-                        var state = state
-                        state.configuration.model = model.id
-                        AIConfigurationStorage.shared.saveConfiguration(state.configuration)
-                        return state
+            // Use searchable list for many models, ActionSheet for few
+            if models.count > 10 {
+                // Use SearchableSelectionScreen with search
+                let items = models.map { SearchableSelectionItem(id: $0.id, title: $0.name) }
+                let configuration = SearchableSelectionConfiguration(
+                    title: "Select Model",
+                    searchPlaceholder: "Search models...",
+                    emptyResultsText: "No models match your search",
+                    showItemCount: true
+                )
+                let selectionController = searchableSelectionScreen(
+                    context: context,
+                    items: items,
+                    selectedId: currentState.configuration.model,
+                    configuration: configuration,
+                    completion: { selectedId in
+                        updateState { state in
+                            var state = state
+                            state.configuration.model = selectedId
+                            AIConfigurationStorage.shared.saveConfiguration(state.configuration)
+                            return state
+                        }
                     }
-                }))
-            }
+                )
+                pushControllerImpl?(selectionController)
+            } else {
+                // Use ActionSheet for small number of models
+                let actionSheet = ActionSheetController(presentationData: presentationData)
 
-            if currentState.configuration.provider == .custom || models.isEmpty {
-                // For custom provider, allow text input
+                var items: [ActionSheetItem] = []
+                for model in models {
+                    items.append(ActionSheetButtonItem(title: model.name, action: { [weak actionSheet] in
+                        actionSheet?.dismissAnimated()
+                        updateState { state in
+                            var state = state
+                            state.configuration.model = model.id
+                            AIConfigurationStorage.shared.saveConfiguration(state.configuration)
+                            return state
+                        }
+                    }))
+                }
+
+                // Always allow custom model input
                 items.append(ActionSheetButtonItem(title: "Enter Custom Model...", action: { [weak actionSheet] in
                     actionSheet?.dismissAnimated()
 
@@ -337,18 +390,106 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                     )
                     presentControllerImpl?(promptVC, nil)
                 }))
-            }
 
-            actionSheet.setItemGroups([
-                ActionSheetItemGroup(items: items),
-                ActionSheetItemGroup(items: [
-                    ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
-                        actionSheet?.dismissAnimated()
-                    })
+                actionSheet.setItemGroups([
+                    ActionSheetItemGroup(items: items),
+                    ActionSheetItemGroup(items: [
+                        ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
+                            actionSheet?.dismissAnimated()
+                        })
+                    ])
                 ])
-            ])
 
-            presentControllerImpl?(actionSheet, nil)
+                presentControllerImpl?(actionSheet, nil)
+            }
+        },
+        fetchModels: {
+            let currentState = stateValue.with { $0 }
+            
+            // Check if API key and base URL are configured
+            guard !currentState.configuration.apiKey.isEmpty && !currentState.configuration.baseURL.isEmpty else {
+                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                let alertController = textAlertController(
+                    context: context,
+                    title: "Configuration Required",
+                    text: "Please enter your API key and base URL first.",
+                    actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]
+                )
+                presentControllerImpl?(alertController, nil)
+                return
+            }
+            
+            // Set loading state
+            updateState { state in
+                var state = state
+                state.isFetchingModels = true
+                return state
+            }
+            
+            // Fetch models
+            let signal = AIService.fetchModels(
+                baseURL: currentState.configuration.baseURL,
+                apiKey: currentState.configuration.apiKey,
+                provider: currentState.configuration.provider
+            )
+            
+            let _ = (signal |> deliverOnMainQueue).start(next: { models in
+                updateState { state in
+                    var state = state
+                    state.isFetchingModels = false
+                    state.fetchedModels = models.map { ($0.id, $0.name) }
+                    return state
+                }
+                
+                if models.isEmpty {
+                    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                    let alertController = textAlertController(
+                        context: context,
+                        title: "No Models Found",
+                        text: "No models were returned from the server. You can still enter a model name manually.",
+                        actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]
+                    )
+                    presentControllerImpl?(alertController, nil)
+                } else {
+                    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                    let alertController = textAlertController(
+                        context: context,
+                        title: "Models Fetched",
+                        text: "Found \(models.count) models. Tap 'Model' to select one.",
+                        actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]
+                    )
+                    presentControllerImpl?(alertController, nil)
+                }
+            }, error: { error in
+                updateState { state in
+                    var state = state
+                    state.isFetchingModels = false
+                    return state
+                }
+                
+                let errorMessage: String
+                switch error {
+                case .invalidConfiguration:
+                    errorMessage = "Invalid configuration. Please check your settings."
+                case .networkError(let err):
+                    errorMessage = "Network error: \(err.localizedDescription)"
+                case .invalidResponse:
+                    errorMessage = "Invalid response from server."
+                case .apiError(let msg):
+                    errorMessage = "API error: \(msg)"
+                case .decodingError:
+                    errorMessage = "Failed to parse server response."
+                }
+                
+                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                let alertController = textAlertController(
+                    context: context,
+                    title: "Failed to Fetch Models",
+                    text: errorMessage,
+                    actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]
+                )
+                presentControllerImpl?(alertController, nil)
+            })
         }
     )
 
@@ -367,6 +508,10 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
     
     presentControllerImpl = { [weak controller] c, a in
         controller?.present(c, in: .window(.root), with: a)
+    }
+    
+    pushControllerImpl = { [weak controller] c in
+        (controller?.navigationController as? NavigationController)?.pushViewController(c)
     }
     
     return controller
