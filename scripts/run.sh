@@ -224,6 +224,13 @@ else
     echo "Terminating any existing instances..."
     xcrun simctl terminate "$SIMULATOR_UDID" "$BUNDLE_ID" 2>/dev/null || true
 
+    # Remove old bundle to ensure clean install (preserves user data in separate container)
+    OLD_BUNDLE=$(xcrun simctl get_app_container "$SIMULATOR_UDID" "$BUNDLE_ID" 2>/dev/null || echo "")
+    if [[ -n "$OLD_BUNDLE" && -d "$OLD_BUNDLE" ]]; then
+        echo "Removing old bundle..."
+        rm -rf "$OLD_BUNDLE"
+    fi
+
     # Install the app
     echo "Installing..."
     xcrun simctl install "$SIMULATOR_UDID" "$APP_PATH"
