@@ -773,6 +773,9 @@ ios_framework(
         ":SwiftSignalKitFramework",
         ":PostboxFramework",
     ],
+    linkopts = [
+        "-all_load",
+    ],
     minimum_os_version = minimum_os_version,
     extension_safe = True,
     ipa_post_processor = strip_framework,
@@ -1718,7 +1721,7 @@ ios_application(
         ":RequiredDeviceCapabilitiesPlist",
         ":UrlTypesInfoPlist",
     ],
-    app_icons = [ ":{}_icon".format(name) for name in composer_icon_folders ],
+    app_icons = [":DefaultAppIcon"],
     alternate_icons = [
         ":{}".format(name) for name in alternate_icon_folders
     ],
