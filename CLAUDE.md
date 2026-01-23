@@ -19,6 +19,7 @@ unzip -o bazel-bin/Telegram/Telegram.ipa -d bazel-bin/Telegram/Telegram_extracte
 
 ## Code Style Guidelines
 - **Naming**: PascalCase for types, camelCase for variables/methods
+- **Frontrun Naming**: New Frontrun-specific files and folders should be prefixed with `Frontrun` (e.g., `FrontrunAISettingsController.swift`). Files inside a Frontrun-prefixed folder do not need the prefix.
 - **Imports**: Group and sort imports at the top of files
 - **Error Handling**: Properly handle errors with appropriate redaction of sensitive data
 - **Formatting**: Use standard Swift/Objective-C formatting and spacing
