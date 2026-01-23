@@ -16,9 +16,10 @@ private func generateIndefiniteActivityIndicatorImage(color: UIColor, diameter: 
 }
 
 private func convertIndicatorColor(_ color: UIColor) -> UIColor {
-    if color.isEqual(UIColor(rgb: 0x007aff)) || color.isEqual(UIColor(rgb: 0x0088ff)) {
+    // Original Telegram blues + Frontrun accent colors
+    if color.isEqual(UIColor(rgb: 0x007aff)) || color.isEqual(UIColor(rgb: 0x0088ff)) || color.isEqual(UIColor(rgb: 0x5B7A8A)) {
         return .gray
-    } else if color.isEqual(UIColor(rgb: 0x2ea6ff)) {
+    } else if color.isEqual(UIColor(rgb: 0x2ea6ff)) || color.isEqual(UIColor(rgb: 0x7BA3B3)) {
         return .white
     } else if color.isEqual(UIColor(rgb: 0x000000)) || color.isEqual(UIColor.black) {
         return .gray

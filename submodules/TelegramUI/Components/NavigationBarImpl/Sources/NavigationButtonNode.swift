@@ -309,7 +309,7 @@ private final class NavigationButtonItemNode: ImmediateTextNode {
         }
     }
     
-    public var color: UIColor = UIColor(rgb: 0x0088ff) {
+    public var color: UIColor = UIColor(rgb: 0x5B7A8A) {
         didSet {
             if self.imageNode?.image?.renderingMode == .alwaysTemplate {
                 self.imageNode?.tintColor = self.color
@@ -545,7 +545,7 @@ public final class NavigationButtonNodeImpl: ContextControllerSourceNode, Naviga
     public var pressed: (Int) -> () = { _ in }
     public var highlightChanged: (Int, Bool) -> () = { _, _ in }
     
-    public var color: UIColor = UIColor(rgb: 0x0088ff) {
+    public var color: UIColor = UIColor(rgb: 0x5B7A8A) {
         didSet {
             if !self.color.isEqual(oldValue) {
                 for node in self.nodes {

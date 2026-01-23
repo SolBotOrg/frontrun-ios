@@ -120,11 +120,11 @@ if color.isEqual(UIColor(rgb: 0x007aff)) ||
 - [x] Day theme accent color is `#5B7A8A` (steel blue-grey)
 - [x] Dark theme accent color is `#6B8A9A`
 - [x] Dark tinted theme accent color is `#7BA3B3`
-- [ ] Navigation bar buttons use new accent in all themes
-- [ ] Tab bar selected icons use new accent
-- [ ] No Telegram blue visible in primary navigation or chat surfaces
+- [x] Navigation bar buttons use new accent in all themes
+- [x] Tab bar selected icons use new accent
+- [x] No Telegram blue visible in primary navigation or chat surfaces
 - [ ] Existing user-customized themes remain unaffected
-- [ ] Activity indicator behaves correctly with new colors
+- [x] Activity indicator behaves correctly with new colors
 
 ## Success Metrics
 
@@ -149,17 +149,17 @@ if color.isEqual(UIColor(rgb: 0x007aff)) ||
 ## Testing Checklist
 
 ### Phase 1 Verification (Required)
-- [ ] Build succeeds
-- [ ] Day theme: nav bar, tab bar, links, buttons show steel blue-grey
-- [ ] Dark theme: same surfaces show correct dark accent
-- [ ] Dark tinted theme: same surfaces show correct tinted accent
+- [x] Build succeeds
+- [x] Day theme: nav bar, tab bar, links, buttons show steel blue-grey
+- [x] Dark theme: same surfaces show correct dark accent
+- [x] Dark tinted theme: same surfaces show correct tinted accent
 - [ ] Outgoing message bubble gradient looks acceptable (not muddy)
-- [ ] Activity indicator works correctly
+- [x] Activity indicator works correctly
 - [ ] Chat links use new accent color
 
 ### Phase 2 Verification (If Needed)
-- [ ] Open gallery in light theme
-- [ ] Record voice message (check overlay button)
+- [x] Open gallery in light theme
+- [x] Record voice message (check overlay button)
 - [ ] Test automatic theme switching (light ↔ dark)
 
 ### Edge Cases
