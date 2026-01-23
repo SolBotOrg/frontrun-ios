@@ -54,7 +54,13 @@ public func dateFillNeedsBlur(theme: PresentationTheme, wallpaper: TelegramWallp
 
 public let defaultServiceBackgroundColor = UIColor(rgb: 0x000000, alpha: 0.2)
 public let defaultPresentationTheme = makeDefaultDayPresentationTheme(serviceBackgroundColor: defaultServiceBackgroundColor, day: false, preview: false)
-public let defaultDayAccentColor = UIColor(rgb: 0x0088ff)
+
+// MARK: - Frontrun Accent Colors
+public let frontrunDayAccentColor = UIColor(rgb: 0x5B7A8A)
+public let frontrunDarkAccentColor = UIColor(rgb: 0x6B8A9A)
+public let frontrunTintedAccentColor = UIColor(rgb: 0x7BA3B3)
+
+public let defaultDayAccentColor = frontrunDayAccentColor
 
 public func customizeDefaultDayTheme(theme: PresentationTheme, editing: Bool, title: String?, accentColor: UIColor?, outgoingAccentColor: UIColor?, backgroundColors: [UInt32], bubbleColors: [UInt32], animateBubbleColors: Bool?, wallpaper forcedWallpaper: TelegramWallpaper? = nil, serviceBackgroundColor: UIColor?) -> PresentationTheme {
     if (theme.referenceTheme != .day && theme.referenceTheme != .dayClassic) {
