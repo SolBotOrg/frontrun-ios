@@ -6,12 +6,15 @@ set -e
 # Based on launch_and_debug.sh but without the debugger attachment
 
 DEFAULT_DISK_CACHE="$HOME/telegram-bazel-cache"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Parse arguments
 DISK_CACHE="$DEFAULT_DISK_CACHE"
 SKIP_BUILD=false
 USE_DEVICE=false
 DEVICE_UDID=""
+BUILD_CONFIG="dev"
 for arg in "$@"; do
     case $arg in
         --disk-cache=*)
@@ -35,10 +38,25 @@ for arg in "$@"; do
             DEVICE_UDID="${arg#*=}"
             shift
             ;;
+        --config=*)
+            BUILD_CONFIG="${arg#*=}"
+            shift
+            ;;
+        --dev)
+            BUILD_CONFIG="dev"
+            shift
+            ;;
+        --dist)
+            BUILD_CONFIG="dist"
+            shift
+            ;;
         --help|-h)
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
+            echo "  --dev                Use development configuration (default)"
+            echo "  --dist               Use distribution configuration"
+            echo "  --config=<dev|dist>  Set build configuration"
             echo "  --disk-cache=<path>  Set custom disk cache path (default: ~/telegram-bazel-cache)"
             echo "  --no-disk-cache      Disable disk cache"
             echo "  --skip-build         Skip build, just install and launch"
@@ -49,6 +67,62 @@ for arg in "$@"; do
             ;;
     esac
 done
+
+# Set configuration file based on build config
+case "$BUILD_CONFIG" in
+    dev|development)
+        CONFIG_FILE="$PROJECT_ROOT/build-system/development-configuration.json"
+        APS_ENVIRONMENT="development"
+        echo "Using development configuration"
+        ;;
+    dist|distribution)
+        CONFIG_FILE="$PROJECT_ROOT/build-system/frontrun-distribution-config.json"
+        APS_ENVIRONMENT="production"
+        echo "Using distribution configuration"
+        ;;
+    *)
+        echo "Unknown config: $BUILD_CONFIG (use 'dev' or 'dist')"
+        exit 1
+        ;;
+esac
+
+# Update variables.bzl from JSON config
+VARIABLES_FILE="$PROJECT_ROOT/build-input/configuration-repository/variables.bzl"
+echo "Updating $VARIABLES_FILE from $CONFIG_FILE..."
+
+BUNDLE_ID=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['bundle_id'])")
+API_ID=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['api_id'])")
+API_HASH=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['api_hash'])")
+TEAM_ID=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['team_id'])")
+APP_CENTER_ID=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['app_center_id'])")
+IS_INTERNAL=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['is_internal_build'])")
+IS_APPSTORE=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['is_appstore_build'])")
+APPSTORE_ID=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['appstore_id'])")
+URL_SCHEME=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['app_specific_url_scheme'])")
+PREMIUM_IAP=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['premium_iap_product_id'])")
+ENABLE_SIRI=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['enable_siri'])")
+ENABLE_ICLOUD=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['enable_icloud'])")
+
+cat > "$VARIABLES_FILE" << EOF
+telegram_bazel_path = "$PROJECT_ROOT/build-input/bazel-8.4.2-darwin-arm64"
+telegram_use_xcode_managed_codesigning = False
+telegram_bundle_id = "$BUNDLE_ID"
+telegram_api_id = "$API_ID"
+telegram_api_hash = "$API_HASH"
+telegram_team_id = "$TEAM_ID"
+telegram_app_center_id = "$APP_CENTER_ID"
+telegram_is_internal_build = "$IS_INTERNAL"
+telegram_is_appstore_build = "$IS_APPSTORE"
+telegram_appstore_id = "$APPSTORE_ID"
+telegram_app_specific_url_scheme = "$URL_SCHEME"
+telegram_premium_iap_product_id = "$PREMIUM_IAP"
+telegram_aps_environment = "$APS_ENVIRONMENT"
+telegram_enable_siri = $ENABLE_SIRI
+telegram_enable_icloud = $ENABLE_ICLOUD
+telegram_enable_watch = True
+EOF
+
+echo "Bundle ID: $BUNDLE_ID"
 
 # Build disk cache argument
 DISK_CACHE_ARG=""
