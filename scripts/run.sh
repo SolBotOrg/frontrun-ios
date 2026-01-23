@@ -9,6 +9,18 @@ DEFAULT_DISK_CACHE="$HOME/telegram-bazel-cache"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Handle git worktree: symlink build-input from main worktree if missing
+if [[ ! -d "$PROJECT_ROOT/build-input" ]]; then
+    main_worktree=$(git -C "$PROJECT_ROOT" worktree list --porcelain 2>/dev/null | grep "^worktree " | head -1 | cut -d' ' -f2-)
+    if [[ -n "$main_worktree" && "$main_worktree" != "$PROJECT_ROOT" && -d "$main_worktree/build-input" ]]; then
+        echo "Git worktree detected. Symlinking build-input from main worktree..."
+        ln -s "$main_worktree/build-input" "$PROJECT_ROOT/build-input"
+    else
+        echo "Error: build-input directory not found and could not locate main worktree"
+        exit 1
+    fi
+fi
+
 # Parse arguments
 DISK_CACHE="$DEFAULT_DISK_CACHE"
 SKIP_BUILD=false
@@ -68,15 +80,40 @@ for arg in "$@"; do
     esac
 done
 
+# Function to find config file, checking local first, then main worktree
+find_config_file() {
+    local config_name="$1"
+    local local_path="$PROJECT_ROOT/build-system/$config_name"
+
+    # Check local first
+    if [[ -f "$local_path" ]]; then
+        echo "$local_path"
+        return
+    fi
+
+    # Try to find in main worktree
+    local main_worktree=$(git worktree list --porcelain 2>/dev/null | grep "^worktree " | head -1 | cut -d' ' -f2-)
+    if [[ -n "$main_worktree" && "$main_worktree" != "$PROJECT_ROOT" ]]; then
+        local main_path="$main_worktree/build-system/$config_name"
+        if [[ -f "$main_path" ]]; then
+            echo "$main_path"
+            return
+        fi
+    fi
+
+    # Not found
+    echo ""
+}
+
 # Set configuration file based on build config
 case "$BUILD_CONFIG" in
     dev|development)
-        CONFIG_FILE="$PROJECT_ROOT/build-system/development-configuration.json"
+        CONFIG_FILE=$(find_config_file "development-configuration.json")
         APS_ENVIRONMENT="development"
         echo "Using development configuration"
         ;;
     dist|distribution)
-        CONFIG_FILE="$PROJECT_ROOT/build-system/frontrun-distribution-config.json"
+        CONFIG_FILE=$(find_config_file "frontrun-distribution-config.json")
         APS_ENVIRONMENT="production"
         echo "Using distribution configuration"
         ;;
@@ -85,6 +122,19 @@ case "$BUILD_CONFIG" in
         exit 1
         ;;
 esac
+
+# Verify config file was found
+if [[ -z "$CONFIG_FILE" || ! -f "$CONFIG_FILE" ]]; then
+    echo "Error: Configuration file not found for '$BUILD_CONFIG' config"
+    echo "Looked in: $PROJECT_ROOT/build-system/"
+    main_worktree=$(git worktree list --porcelain 2>/dev/null | grep "^worktree " | head -1 | cut -d' ' -f2-)
+    if [[ -n "$main_worktree" && "$main_worktree" != "$PROJECT_ROOT" ]]; then
+        echo "Also looked in: $main_worktree/build-system/"
+    fi
+    exit 1
+fi
+
+echo "Config file: $CONFIG_FILE"
 
 # Update variables.bzl from JSON config
 VARIABLES_FILE="$PROJECT_ROOT/build-input/configuration-repository/variables.bzl"
