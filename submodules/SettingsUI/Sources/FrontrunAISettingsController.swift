@@ -9,7 +9,7 @@ import ItemListUI
 import PresentationDataUtils
 import AccountContext
 import PromptUI
-import FrontrunAIModule
+import FRServices
 import SearchableSelectionScreen
 
 private final class AISettingsControllerArguments {

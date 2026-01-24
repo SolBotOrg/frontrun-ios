@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import SwiftSignalKit
 
 public enum AIProvider: String, Codable, CaseIterable {
@@ -535,6 +534,9 @@ extension AIConfiguration: Codable {
     }
 }
 
+// MARK: - Configuration Storage
+
+// TODO: Migrate API key storage to Keychain for security (separate ticket)
 public final class AIConfigurationStorage {
     private let userDefaultsKey = "telegram.ai.configuration"
 

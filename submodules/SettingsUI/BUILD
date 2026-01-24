@@ -18,7 +18,7 @@ swift_library(
         "//submodules/MtProtoKit:MtProtoKit",
         "//submodules/TelegramPresentationData:TelegramPresentationData",
         "//submodules/AccountContext:AccountContext",
-        "//submodules/FrontrunAIModule:FrontrunAIModule",
+        "//Frontrun/FRServices:FRServices",
         "//submodules/ActivityIndicator:ActivityIndicator",
         "//submodules/AlertUI:AlertUI",
         "//submodules/PresentationDataUtils:PresentationDataUtils",

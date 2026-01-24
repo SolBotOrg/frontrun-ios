@@ -12,8 +12,8 @@ import ViewControllerComponent
 import SheetComponent
 import MultilineTextComponent
 import Markdown
-import FrontrunAIModule
-import FrontrunCryptoModule
+import FRServices
+import FRModels
 import SettingsUI
 import GlassBarButtonComponent
 import BundleIconComponent
@@ -1229,7 +1229,7 @@ private final class ChatSummaryContentComponent: Component {
                     if let range = Range(match.range(at: 1), in: text) {
                         let addr = String(text[range])
                         // Validate it looks like a Solana address
-                        if DexScreenerService.detectChainType(address: addr) == "solana" && !addresses.contains(addr) {
+                        if ChainDetection.detectChainType(address: addr) == "solana" && !addresses.contains(addr) {
                             addresses.append(addr)
                         }
                     }
