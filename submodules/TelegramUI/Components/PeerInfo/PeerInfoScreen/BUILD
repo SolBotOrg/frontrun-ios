@@ -96,6 +96,7 @@ swift_library(
         "//submodules/SearchUI",
         "//submodules/TelegramUI/Components/SendInviteLinkScreen",
         "//submodules/SettingsUI",
+        "//Frontrun/FRSettingsUI:FRSettingsUI",
         "//submodules/ShareController",
         "//submodules/TelegramUI/Components/ShareWithPeersScreen",
         "//submodules/StatisticsUI",

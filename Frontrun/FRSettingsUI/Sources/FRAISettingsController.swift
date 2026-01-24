@@ -12,7 +12,7 @@ import PromptUI
 import FRServices
 import SearchableSelectionScreen
 
-private final class AISettingsControllerArguments {
+private final class FRAISettingsControllerArguments {
     let context: AccountContext
     let updateEnabled: (Bool) -> Void
     let updateProvider: (AIProvider) -> Void
@@ -46,14 +46,14 @@ private final class AISettingsControllerArguments {
     }
 }
 
-private enum AISettingsSection: Int32 {
+private enum FRAISettingsSection: Int32 {
     case enabled
     case provider
     case apiKey
     case endpoint
 }
 
-private enum AISettingsEntry: ItemListNodeEntry {
+private enum FRAISettingsEntry: ItemListNodeEntry {
     case enabled(PresentationTheme, String, Bool)
     case enabledInfo(PresentationTheme, String)
 
@@ -73,13 +73,13 @@ private enum AISettingsEntry: ItemListNodeEntry {
     var section: ItemListSectionId {
         switch self {
         case .enabled, .enabledInfo:
-            return AISettingsSection.enabled.rawValue
+            return FRAISettingsSection.enabled.rawValue
         case .providerHeader, .provider:
-            return AISettingsSection.provider.rawValue
+            return FRAISettingsSection.provider.rawValue
         case .apiKeyHeader, .apiKey, .apiKeyInfo:
-            return AISettingsSection.apiKey.rawValue
+            return FRAISettingsSection.apiKey.rawValue
         case .endpointHeader, .baseURL, .model, .fetchModels, .endpointInfo:
-            return AISettingsSection.endpoint.rawValue
+            return FRAISettingsSection.endpoint.rawValue
         }
     }
 
@@ -112,12 +112,12 @@ private enum AISettingsEntry: ItemListNodeEntry {
         }
     }
 
-    static func <(lhs: AISettingsEntry, rhs: AISettingsEntry) -> Bool {
+    static func <(lhs: FRAISettingsEntry, rhs: FRAISettingsEntry) -> Bool {
         return lhs.stableId < rhs.stableId
     }
 
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
-        let arguments = arguments as! AISettingsControllerArguments
+        let arguments = arguments as! FRAISettingsControllerArguments
         switch self {
         case let .enabled(_, text, value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
@@ -159,23 +159,23 @@ private enum AISettingsEntry: ItemListNodeEntry {
     }
 }
 
-private struct AISettingsControllerState: Equatable {
+private struct FRAISettingsControllerState: Equatable {
     var configuration: AIConfiguration
     var isFetchingModels: Bool = false
     var fetchedModels: [(id: String, name: String)] = []
-    
-    static func == (lhs: AISettingsControllerState, rhs: AISettingsControllerState) -> Bool {
+
+    static func == (lhs: FRAISettingsControllerState, rhs: FRAISettingsControllerState) -> Bool {
         return lhs.configuration == rhs.configuration &&
                lhs.isFetchingModels == rhs.isFetchingModels &&
                lhs.fetchedModels.map { $0.id } == rhs.fetchedModels.map { $0.id }
     }
 }
 
-private func aiSettingsControllerEntries(
+private func frAISettingsControllerEntries(
     presentationData: PresentationData,
-    state: AISettingsControllerState
-) -> [AISettingsEntry] {
-    var entries: [AISettingsEntry] = []
+    state: FRAISettingsControllerState
+) -> [FRAISettingsEntry] {
+    var entries: [FRAISettingsEntry] = []
 
     // Enable section
     entries.append(.enabled(presentationData.theme, "Enable AI Assistant", state.configuration.enabled))
@@ -188,7 +188,7 @@ private func aiSettingsControllerEntries(
     // API Key section
     entries.append(.apiKeyHeader(presentationData.theme, "API KEY"))
     entries.append(.apiKey(presentationData.theme, "Enter your API key", state.configuration.apiKey))
-    
+
     let apiKeyHint: String
     switch state.configuration.provider {
     case .openai:
@@ -211,20 +211,20 @@ private func aiSettingsControllerEntries(
 }
 
 public func aiSettingsController(context: AccountContext) -> ViewController {
-    let statePromise = ValuePromise(AISettingsControllerState(
+    let statePromise = ValuePromise(FRAISettingsControllerState(
         configuration: AIConfigurationStorage.shared.getConfiguration()
     ), ignoreRepeated: true)
-    let stateValue = Atomic(value: AISettingsControllerState(
+    let stateValue = Atomic(value: FRAISettingsControllerState(
         configuration: AIConfigurationStorage.shared.getConfiguration()
     ))
-    let updateState: ((AISettingsControllerState) -> AISettingsControllerState) -> Void = { f in
+    let updateState: ((FRAISettingsControllerState) -> FRAISettingsControllerState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
     }
 
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
     var pushControllerImpl: ((ViewController) -> Void)?
 
-    let arguments = AISettingsControllerArguments(
+    let arguments = FRAISettingsControllerArguments(
         context: context,
         updateEnabled: { value in
             updateState { state in
@@ -405,7 +405,7 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
         },
         fetchModels: {
             let currentState = stateValue.with { $0 }
-            
+
             // Check if API key and base URL are configured
             guard !currentState.configuration.apiKey.isEmpty && !currentState.configuration.baseURL.isEmpty else {
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -418,21 +418,21 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                 presentControllerImpl?(alertController, nil)
                 return
             }
-            
+
             // Set loading state
             updateState { state in
                 var state = state
                 state.isFetchingModels = true
                 return state
             }
-            
+
             // Fetch models
             let signal = AIService.fetchModels(
                 baseURL: currentState.configuration.baseURL,
                 apiKey: currentState.configuration.apiKey,
                 provider: currentState.configuration.provider
             )
-            
+
             let _ = (signal |> deliverOnMainQueue).start(next: { models in
                 updateState { state in
                     var state = state
@@ -440,7 +440,7 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                     state.fetchedModels = models.map { ($0.id, $0.name) }
                     return state
                 }
-                
+
                 if models.isEmpty {
                     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                     let alertController = textAlertController(
@@ -466,7 +466,7 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                     state.isFetchingModels = false
                     return state
                 }
-                
+
                 let errorMessage: String
                 switch error {
                 case .invalidConfiguration:
@@ -480,7 +480,7 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                 case .decodingError:
                     errorMessage = "Failed to parse server response."
                 }
-                
+
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                 let alertController = textAlertController(
                     context: context,
@@ -499,20 +499,20 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
     )
     |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("AI Settings"), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: aiSettingsControllerEntries(presentationData: presentationData, state: state), style: .blocks)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: frAISettingsControllerEntries(presentationData: presentationData, state: state), style: .blocks)
 
         return (controllerState, (listState, arguments))
     }
 
     let controller = ItemListController(context: context, state: signal)
-    
+
     presentControllerImpl = { [weak controller] c, a in
         controller?.present(c, in: .window(.root), with: a)
     }
-    
+
     pushControllerImpl = { [weak controller] c in
         (controller?.navigationController as? NavigationController)?.pushViewController(c)
     }
-    
+
     return controller
 }

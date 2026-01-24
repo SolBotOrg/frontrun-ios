@@ -22,6 +22,7 @@ This file tracks every modification made to upstream Telegram files. When syncin
 "//Frontrun/FRServices:FRServices",
 "//Frontrun/FRModels:FRModels",
 "//Frontrun/FRSummaryUI:FRSummaryUI",
+"//Frontrun/FRSettingsUI:FRSettingsUI",
 ```
 
 **Conflict Resolution:** Simply append to deps array. Order doesn't matter.
@@ -36,8 +37,9 @@ This file tracks every modification made to upstream Telegram files. When syncin
 
 **Changes:**
 ```swift
-// Add import:
+// Add imports:
 import FRSummaryUI
+import FRSettingsUI
 
 // In summary button handler, replace:
 // let controller = ChatSummarySheetScreen(...)
@@ -45,7 +47,39 @@ import FRSummaryUI
 let controller = FRSummarySheetScreen(context: strongSelf.context, peerId: peerId)
 ```
 
-**Conflict Resolution:** Add import, update class reference from `ChatSummarySheetScreen` to `FRSummarySheetScreen`.
+**Conflict Resolution:** Add imports, update class reference from `ChatSummarySheetScreen` to `FRSummarySheetScreen`.
+
+---
+
+### submodules/TelegramUI/Components/PeerInfo/PeerInfoScreen/Sources/PeerInfoScreenSettingsActions.swift
+
+**Purpose:** Import FRSettingsUI for AI settings controller
+
+**Location:** Import section
+
+**Changes:**
+```swift
+// Add import:
+import FRSettingsUI
+```
+
+**Conflict Resolution:** Add import alongside existing SettingsUI import.
+
+---
+
+### submodules/TelegramUI/Components/PeerInfo/PeerInfoScreen/BUILD
+
+**Purpose:** Add FRSettingsUI dependency for AI settings controller
+
+**Location:** deps array
+
+**Changes:**
+```python
+# Add to deps section:
+"//Frontrun/FRSettingsUI:FRSettingsUI",
+```
+
+**Conflict Resolution:** Simply append to deps array. Order doesn't matter.
 
 ---
 
@@ -138,8 +172,12 @@ When merging upstream:
 | 2026-01-24 | TelegramUI/BUILD | Added FRServices + FRModels deps | Migrated from submodules to Frontrun/ |
 | 2026-01-24 | TelegramUI/BUILD | Added FRSummaryUI dep | Migrated ChatSummarySheetScreen to FRSummaryUI |
 | 2026-01-24 | ChatControllerLoadDisplayNode.swift | Import FRSummaryUI, use FRSummarySheetScreen | Migrated ChatSummarySheetScreen to FRSummaryUI |
-| 2026-01-24 | SettingsUI/BUILD | Added FRServices dep | Migrated from FrontrunAIModule |
+| 2026-01-24 | SettingsUI/BUILD | Removed FRServices dep | Moved AI settings controllers to FRSettingsUI |
 | 2026-01-24 | ChatListUI/BUILD | Added FRServices dep | Migrated from FrontrunAIModule |
+| 2026-01-24 | TelegramUI/BUILD | Added FRSettingsUI dep | AI settings controllers moved to Frontrun/ |
+| 2026-01-24 | ChatControllerLoadDisplayNode.swift | Added FRSettingsUI import | AI settings controllers moved to Frontrun/ |
+| 2026-01-24 | PeerInfoScreenSettingsActions.swift | Added FRSettingsUI import | AI settings controllers moved to Frontrun/ |
+| 2026-01-24 | PeerInfoScreen/BUILD | Added FRSettingsUI dep | AI settings controllers moved to Frontrun/ |
 | 2026-01-24 | (planned) | TelegramRootController.swift | Tab injection |
 | 2026-01-24 | (planned) | ChatController.swift | Token detection |
 

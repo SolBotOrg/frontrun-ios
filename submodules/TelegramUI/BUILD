@@ -53,6 +53,7 @@ swift_library(
         "//Frontrun/FRServices:FRServices",
         "//Frontrun/FRModels:FRModels",
         "//Frontrun/FRSummaryUI:FRSummaryUI",
+        "//Frontrun/FRSettingsUI:FRSettingsUI",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/SSignalKit/SSignalKit:SSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
