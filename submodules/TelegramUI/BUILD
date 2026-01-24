@@ -50,8 +50,8 @@ swift_library(
     ],
     deps = [
         "//third-party/recaptcha:RecaptchaEnterpriseSDK",
-        "//submodules/FrontrunAIModule:FrontrunAIModule",
-        "//submodules/FrontrunCryptoModule:FrontrunCryptoModule",
+        "//Frontrun/FRServices:FRServices",
+        "//Frontrun/FRModels:FRModels",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/SSignalKit/SSignalKit:SSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",

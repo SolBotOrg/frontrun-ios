@@ -19,7 +19,8 @@ This file tracks every modification made to upstream Telegram files. When syncin
 **Changes:**
 ```python
 # Add to deps section:
-"//Frontrun/FRIntegration:FRIntegration",
+"//Frontrun/FRServices:FRServices",
+"//Frontrun/FRModels:FRModels",
 ```
 
 **Conflict Resolution:** Simply append to deps array. Order doesn't matter.
@@ -112,9 +113,11 @@ When merging upstream:
 
 | Date | File | Change | Reason |
 |------|------|--------|--------|
+| 2026-01-24 | TelegramUI/BUILD | Added FRServices + FRModels deps | Migrated from submodules to Frontrun/ |
+| 2026-01-24 | SettingsUI/BUILD | Added FRServices dep | Migrated from FrontrunAIModule |
+| 2026-01-24 | ChatListUI/BUILD | Added FRServices dep | Migrated from FrontrunAIModule |
 | 2026-01-24 | (planned) | TelegramRootController.swift | Tab injection |
 | 2026-01-24 | (planned) | ChatController.swift | Token detection |
-| 2026-01-24 | (planned) | TelegramUI/BUILD | Module deps |
 
 ---
 

@@ -77,13 +77,13 @@ private class StreamingDelegate: NSObject, URLSessionDataDelegate {
             subscriber.putError(.networkError(error))
             return
         }
-        
+
         // Check if we received any data at all
         if receivedData.isEmpty {
             subscriber.putError(.invalidResponse)
             return
         }
-        
+
         // Check HTTP status code
         if let httpResponse = task.response as? HTTPURLResponse {
             if httpResponse.statusCode != 200 {
@@ -100,7 +100,7 @@ private class StreamingDelegate: NSObject, URLSessionDataDelegate {
                 return
             }
         }
-        
+
         subscriber.putNext(AIStreamChunk(content: "", isComplete: true))
         subscriber.putCompletion()
     }
@@ -128,29 +128,29 @@ private class StreamingDelegate: NSObject, URLSessionDataDelegate {
 public struct AIModel {
     public let id: String
     public let name: String
-    
+
     public init(id: String, name: String) {
         self.id = id
         self.name = name
     }
 }
 
-public final class AIService {
+public final class AIService: AIServiceProtocol {
     private let configuration: AIConfiguration
 
     public init(configuration: AIConfiguration) {
         self.configuration = configuration
     }
-    
+
     public static func fetchModels(baseURL: String, apiKey: String, provider: AIProvider) -> Signal<[AIModel], AIError> {
         return Signal { subscriber in
             var urlString = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-            
+
             // Remove trailing slash
             if urlString.hasSuffix("/") {
                 urlString = String(urlString.dropLast())
             }
-            
+
             // Build the models endpoint URL
             switch provider {
             case .openai, .custom:
@@ -169,27 +169,27 @@ public final class AIService {
                 subscriber.putCompletion()
                 return EmptyDisposable
             }
-            
+
             guard let url = URL(string: urlString) else {
                 subscriber.putError(.invalidConfiguration)
                 return EmptyDisposable
             }
-            
+
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            
+
             let task = URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
                     subscriber.putError(.networkError(error))
                     return
                 }
-                
+
                 guard let data = data else {
                     subscriber.putError(.invalidResponse)
                     return
                 }
-                
+
                 // Check HTTP status code
                 if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
                     if let errorString = String(data: data, encoding: .utf8),
@@ -203,13 +203,13 @@ public final class AIService {
                     }
                     return
                 }
-                
+
                 guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let dataArray = json["data"] as? [[String: Any]] else {
                     subscriber.putError(.decodingError)
                     return
                 }
-                
+
                 var models: [AIModel] = []
                 for item in dataArray {
                     if let id = item["id"] as? String {
@@ -219,16 +219,16 @@ public final class AIService {
                         models.append(AIModel(id: id, name: displayName))
                     }
                 }
-                
+
                 // Sort models alphabetically
                 models.sort { $0.id < $1.id }
-                
+
                 subscriber.putNext(models)
                 subscriber.putCompletion()
             }
-            
+
             task.resume()
-            
+
             return ActionDisposable {
                 task.cancel()
             }
