@@ -76,10 +76,11 @@ Telegram.LSP.json
 spm-files
 xcode-files
 .bsp/**
-/.claude/
+# Ignore .claude except frontrun-* skills
+/.claude/*
 !/.claude/skills/
+/.claude/skills/*
 !/.claude/skills/frontrun-*/
-!/.claude/skills/frontrun-*/**
 /buildbox/*
 build-system/development-configuration.json
 build-system/frontrun-distribution-config.json
