@@ -1,9 +1,6 @@
 import Foundation
-import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
-import TelegramCore
 import TelegramPresentationData
 import ItemListUI
 import PresentationDataUtils
@@ -11,31 +8,28 @@ import AccountContext
 import PromptUI
 import FRServices
 
-private final class AISummarySettingsControllerArguments {
-    let context: AccountContext
+private final class FRAISummarySettingsControllerArguments {
     let selectMessageCount: () -> Void
     let updateUserPrompt: (String) -> Void
     let resetUserPrompt: () -> Void
 
     init(
-        context: AccountContext,
         selectMessageCount: @escaping () -> Void,
         updateUserPrompt: @escaping (String) -> Void,
         resetUserPrompt: @escaping () -> Void
     ) {
-        self.context = context
         self.selectMessageCount = selectMessageCount
         self.updateUserPrompt = updateUserPrompt
         self.resetUserPrompt = resetUserPrompt
     }
 }
 
-private enum AISummarySettingsSection: Int32 {
+private enum FRAISummarySettingsSection: Int32 {
     case messageCount
     case userPrompt
 }
 
-private enum AISummarySettingsEntry: ItemListNodeEntry {
+private enum FRAISummarySettingsEntry: ItemListNodeEntry {
     case messageCountHeader(PresentationTheme, String)
     case messageCount(PresentationTheme, String, SummaryMessageCount)
     case messageCountInfo(PresentationTheme, String)
@@ -48,9 +42,9 @@ private enum AISummarySettingsEntry: ItemListNodeEntry {
     var section: ItemListSectionId {
         switch self {
         case .messageCountHeader, .messageCount, .messageCountInfo:
-            return AISummarySettingsSection.messageCount.rawValue
+            return FRAISummarySettingsSection.messageCount.rawValue
         case .userPromptHeader, .userPrompt, .userPromptInfo, .resetUserPrompt:
-            return AISummarySettingsSection.userPrompt.rawValue
+            return FRAISummarySettingsSection.userPrompt.rawValue
         }
     }
 
@@ -73,12 +67,12 @@ private enum AISummarySettingsEntry: ItemListNodeEntry {
         }
     }
 
-    static func <(lhs: AISummarySettingsEntry, rhs: AISummarySettingsEntry) -> Bool {
+    static func <(lhs: FRAISummarySettingsEntry, rhs: FRAISummarySettingsEntry) -> Bool {
         return lhs.stableId < rhs.stableId
     }
 
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
-        let arguments = arguments as! AISummarySettingsControllerArguments
+        let arguments = arguments as! FRAISummarySettingsControllerArguments
         switch self {
         case let .messageCountHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
@@ -104,15 +98,15 @@ private enum AISummarySettingsEntry: ItemListNodeEntry {
     }
 }
 
-private struct AISummarySettingsControllerState: Equatable {
+private struct FRAISummarySettingsControllerState: Equatable {
     var configuration: AIConfiguration
 }
 
-private func aiSummarySettingsControllerEntries(
+private func frAISummarySettingsControllerEntries(
     presentationData: PresentationData,
-    state: AISummarySettingsControllerState
-) -> [AISummarySettingsEntry] {
-    var entries: [AISummarySettingsEntry] = []
+    state: FRAISummarySettingsControllerState
+) -> [FRAISummarySettingsEntry] {
+    var entries: [FRAISummarySettingsEntry] = []
 
     // Message count section
     entries.append(.messageCountHeader(presentationData.theme, "MESSAGE COUNT"))
@@ -129,20 +123,19 @@ private func aiSummarySettingsControllerEntries(
 }
 
 public func aiSummarySettingsController(context: AccountContext) -> ViewController {
-    let statePromise = ValuePromise(AISummarySettingsControllerState(
+    let statePromise = ValuePromise(FRAISummarySettingsControllerState(
         configuration: AIConfigurationStorage.shared.getConfiguration()
     ), ignoreRepeated: true)
-    let stateValue = Atomic(value: AISummarySettingsControllerState(
+    let stateValue = Atomic(value: FRAISummarySettingsControllerState(
         configuration: AIConfigurationStorage.shared.getConfiguration()
     ))
-    let updateState: ((AISummarySettingsControllerState) -> AISummarySettingsControllerState) -> Void = { f in
+    let updateState: ((FRAISummarySettingsControllerState) -> FRAISummarySettingsControllerState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
     }
 
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
 
-    let arguments = AISummarySettingsControllerArguments(
-        context: context,
+    let arguments = FRAISummarySettingsControllerArguments(
         selectMessageCount: {
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             let actionSheet = ActionSheetController(presentationData: presentationData)
@@ -221,7 +214,7 @@ public func aiSummarySettingsController(context: AccountContext) -> ViewControll
     )
     |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("Summary Settings"), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: aiSummarySettingsControllerEntries(presentationData: presentationData, state: state), style: .blocks)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: frAISummarySettingsControllerEntries(presentationData: presentationData, state: state), style: .blocks)
 
         return (controllerState, (listState, arguments))
     }

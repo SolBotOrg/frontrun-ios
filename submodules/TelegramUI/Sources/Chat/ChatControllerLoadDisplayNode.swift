@@ -49,6 +49,7 @@ import PhoneNumberFormat
 import SettingsUI
 import FRServices
 import FRSummaryUI
+import FRSettingsUI
 import UrlWhitelist
 import TelegramIntents
 import TooltipUI

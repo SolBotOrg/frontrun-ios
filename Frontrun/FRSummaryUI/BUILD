@@ -31,7 +31,7 @@ swift_library(
         "//submodules/Markdown:Markdown",
 
         # UI components used
-        "//submodules/SettingsUI:SettingsUI",
+        "//Frontrun/FRSettingsUI:FRSettingsUI",
         "//submodules/TelegramUI/Components/GlassBarButtonComponent:GlassBarButtonComponent",
         "//submodules/Components/BundleIconComponent:BundleIconComponent",
         "//submodules/AvatarNode:AvatarNode",

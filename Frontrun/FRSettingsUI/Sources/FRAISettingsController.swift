@@ -1,9 +1,6 @@
 import Foundation
-import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
-import TelegramCore
 import TelegramPresentationData
 import ItemListUI
 import PresentationDataUtils
@@ -12,10 +9,8 @@ import PromptUI
 import FRServices
 import SearchableSelectionScreen
 
-private final class AISettingsControllerArguments {
-    let context: AccountContext
+private final class FRAISettingsControllerArguments {
     let updateEnabled: (Bool) -> Void
-    let updateProvider: (AIProvider) -> Void
     let updateAPIKey: (String) -> Void
     let updateBaseURL: (String) -> Void
     let updateModel: (String) -> Void
@@ -24,9 +19,7 @@ private final class AISettingsControllerArguments {
     let fetchModels: () -> Void
 
     init(
-        context: AccountContext,
         updateEnabled: @escaping (Bool) -> Void,
-        updateProvider: @escaping (AIProvider) -> Void,
         updateAPIKey: @escaping (String) -> Void,
         updateBaseURL: @escaping (String) -> Void,
         updateModel: @escaping (String) -> Void,
@@ -34,9 +27,7 @@ private final class AISettingsControllerArguments {
         selectModel: @escaping () -> Void,
         fetchModels: @escaping () -> Void
     ) {
-        self.context = context
         self.updateEnabled = updateEnabled
-        self.updateProvider = updateProvider
         self.updateAPIKey = updateAPIKey
         self.updateBaseURL = updateBaseURL
         self.updateModel = updateModel
@@ -46,14 +37,14 @@ private final class AISettingsControllerArguments {
     }
 }
 
-private enum AISettingsSection: Int32 {
+private enum FRAISettingsSection: Int32 {
     case enabled
     case provider
     case apiKey
     case endpoint
 }
 
-private enum AISettingsEntry: ItemListNodeEntry {
+private enum FRAISettingsEntry: ItemListNodeEntry {
     case enabled(PresentationTheme, String, Bool)
     case enabledInfo(PresentationTheme, String)
 
@@ -66,20 +57,20 @@ private enum AISettingsEntry: ItemListNodeEntry {
 
     case endpointHeader(PresentationTheme, String)
     case baseURL(PresentationTheme, String, String)
-    case model(PresentationTheme, String, AIProvider)
+    case model(PresentationTheme, String)
     case fetchModels(PresentationTheme, Bool)
     case endpointInfo(PresentationTheme, String)
 
     var section: ItemListSectionId {
         switch self {
         case .enabled, .enabledInfo:
-            return AISettingsSection.enabled.rawValue
+            return FRAISettingsSection.enabled.rawValue
         case .providerHeader, .provider:
-            return AISettingsSection.provider.rawValue
+            return FRAISettingsSection.provider.rawValue
         case .apiKeyHeader, .apiKey, .apiKeyInfo:
-            return AISettingsSection.apiKey.rawValue
+            return FRAISettingsSection.apiKey.rawValue
         case .endpointHeader, .baseURL, .model, .fetchModels, .endpointInfo:
-            return AISettingsSection.endpoint.rawValue
+            return FRAISettingsSection.endpoint.rawValue
         }
     }
 
@@ -112,12 +103,12 @@ private enum AISettingsEntry: ItemListNodeEntry {
         }
     }
 
-    static func <(lhs: AISettingsEntry, rhs: AISettingsEntry) -> Bool {
+    static func <(lhs: FRAISettingsEntry, rhs: FRAISettingsEntry) -> Bool {
         return lhs.stableId < rhs.stableId
     }
 
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
-        let arguments = arguments as! AISettingsControllerArguments
+        let arguments = arguments as! FRAISettingsControllerArguments
         switch self {
         case let .enabled(_, text, value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
@@ -145,7 +136,7 @@ private enum AISettingsEntry: ItemListNodeEntry {
             return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: "Base URL", attributes: [.font: Font.regular(presentationData.fontSize.itemListBaseFontSize), .foregroundColor: presentationData.theme.list.itemPrimaryTextColor]), text: text, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), alignment: .right, spacing: 16.0, sectionId: self.section, textUpdated: { value in
                 arguments.updateBaseURL(value)
             }, action: {})
-        case let .model(_, currentModel, _):
+        case let .model(_, currentModel):
             return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: "Model", label: currentModel, sectionId: self.section, style: .blocks, action: {
                 arguments.selectModel()
             })
@@ -159,23 +150,23 @@ private enum AISettingsEntry: ItemListNodeEntry {
     }
 }
 
-private struct AISettingsControllerState: Equatable {
+private struct FRAISettingsControllerState: Equatable {
     var configuration: AIConfiguration
     var isFetchingModels: Bool = false
     var fetchedModels: [(id: String, name: String)] = []
-    
-    static func == (lhs: AISettingsControllerState, rhs: AISettingsControllerState) -> Bool {
+
+    static func == (lhs: FRAISettingsControllerState, rhs: FRAISettingsControllerState) -> Bool {
         return lhs.configuration == rhs.configuration &&
                lhs.isFetchingModels == rhs.isFetchingModels &&
                lhs.fetchedModels.map { $0.id } == rhs.fetchedModels.map { $0.id }
     }
 }
 
-private func aiSettingsControllerEntries(
+private func frAISettingsControllerEntries(
     presentationData: PresentationData,
-    state: AISettingsControllerState
-) -> [AISettingsEntry] {
-    var entries: [AISettingsEntry] = []
+    state: FRAISettingsControllerState
+) -> [FRAISettingsEntry] {
+    var entries: [FRAISettingsEntry] = []
 
     // Enable section
     entries.append(.enabled(presentationData.theme, "Enable AI Assistant", state.configuration.enabled))
@@ -188,7 +179,7 @@ private func aiSettingsControllerEntries(
     // API Key section
     entries.append(.apiKeyHeader(presentationData.theme, "API KEY"))
     entries.append(.apiKey(presentationData.theme, "Enter your API key", state.configuration.apiKey))
-    
+
     let apiKeyHint: String
     switch state.configuration.provider {
     case .openai:
@@ -203,7 +194,7 @@ private func aiSettingsControllerEntries(
     // Endpoint section
     entries.append(.endpointHeader(presentationData.theme, "ENDPOINT"))
     entries.append(.baseURL(presentationData.theme, state.configuration.provider.defaultEndpoint, state.configuration.baseURL))
-    entries.append(.model(presentationData.theme, state.configuration.model, state.configuration.provider))
+    entries.append(.model(presentationData.theme, state.configuration.model))
     entries.append(.fetchModels(presentationData.theme, state.isFetchingModels))
     entries.append(.endpointInfo(presentationData.theme, "Customize the API endpoint and model if needed. Tap 'Fetch Available Models' to get the model list from the server."))
 
@@ -211,35 +202,24 @@ private func aiSettingsControllerEntries(
 }
 
 public func aiSettingsController(context: AccountContext) -> ViewController {
-    let statePromise = ValuePromise(AISettingsControllerState(
+    let statePromise = ValuePromise(FRAISettingsControllerState(
         configuration: AIConfigurationStorage.shared.getConfiguration()
     ), ignoreRepeated: true)
-    let stateValue = Atomic(value: AISettingsControllerState(
+    let stateValue = Atomic(value: FRAISettingsControllerState(
         configuration: AIConfigurationStorage.shared.getConfiguration()
     ))
-    let updateState: ((AISettingsControllerState) -> AISettingsControllerState) -> Void = { f in
+    let updateState: ((FRAISettingsControllerState) -> FRAISettingsControllerState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
     }
 
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
     var pushControllerImpl: ((ViewController) -> Void)?
 
-    let arguments = AISettingsControllerArguments(
-        context: context,
+    let arguments = FRAISettingsControllerArguments(
         updateEnabled: { value in
             updateState { state in
                 var state = state
                 state.configuration.enabled = value
-                AIConfigurationStorage.shared.saveConfiguration(state.configuration)
-                return state
-            }
-        },
-        updateProvider: { value in
-            updateState { state in
-                var state = state
-                state.configuration.provider = value
-                state.configuration.baseURL = value.defaultEndpoint
-                state.configuration.model = value.defaultModel
                 AIConfigurationStorage.shared.saveConfiguration(state.configuration)
                 return state
             }
@@ -405,7 +385,7 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
         },
         fetchModels: {
             let currentState = stateValue.with { $0 }
-            
+
             // Check if API key and base URL are configured
             guard !currentState.configuration.apiKey.isEmpty && !currentState.configuration.baseURL.isEmpty else {
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -418,21 +398,21 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                 presentControllerImpl?(alertController, nil)
                 return
             }
-            
+
             // Set loading state
             updateState { state in
                 var state = state
                 state.isFetchingModels = true
                 return state
             }
-            
+
             // Fetch models
             let signal = AIService.fetchModels(
                 baseURL: currentState.configuration.baseURL,
                 apiKey: currentState.configuration.apiKey,
                 provider: currentState.configuration.provider
             )
-            
+
             let _ = (signal |> deliverOnMainQueue).start(next: { models in
                 updateState { state in
                     var state = state
@@ -440,7 +420,7 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                     state.fetchedModels = models.map { ($0.id, $0.name) }
                     return state
                 }
-                
+
                 if models.isEmpty {
                     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                     let alertController = textAlertController(
@@ -466,7 +446,7 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                     state.isFetchingModels = false
                     return state
                 }
-                
+
                 let errorMessage: String
                 switch error {
                 case .invalidConfiguration:
@@ -480,7 +460,7 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
                 case .decodingError:
                     errorMessage = "Failed to parse server response."
                 }
-                
+
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                 let alertController = textAlertController(
                     context: context,
@@ -499,20 +479,20 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
     )
     |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("AI Settings"), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: aiSettingsControllerEntries(presentationData: presentationData, state: state), style: .blocks)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: frAISettingsControllerEntries(presentationData: presentationData, state: state), style: .blocks)
 
         return (controllerState, (listState, arguments))
     }
 
     let controller = ItemListController(context: context, state: signal)
-    
+
     presentControllerImpl = { [weak controller] c, a in
         controller?.present(c, in: .window(.root), with: a)
     }
-    
+
     pushControllerImpl = { [weak controller] c in
         (controller?.navigationController as? NavigationController)?.pushViewController(c)
     }
-    
+
     return controller
 }

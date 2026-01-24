@@ -10,7 +10,7 @@ import AccountContext
 import ComponentFlow
 import ViewControllerComponent
 import SheetComponent
-import SettingsUI
+import FRSettingsUI
 import ContextUI
 import UndoUI
 import FRServices

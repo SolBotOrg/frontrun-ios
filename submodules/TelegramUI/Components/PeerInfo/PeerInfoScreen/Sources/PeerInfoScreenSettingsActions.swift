@@ -6,6 +6,7 @@ import SwiftSignalKit
 import Postbox
 import TelegramCore
 import SettingsUI
+import FRSettingsUI
 import PeerInfoStoryGridScreen
 import CallListUI
 import PassportUI
