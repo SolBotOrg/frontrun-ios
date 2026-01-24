@@ -124,6 +124,35 @@ EOF
 
 echo "Bundle ID: $BUNDLE_ID"
 
+# Copy provisioning profiles based on config
+PROFILES_SRC="$PROJECT_ROOT/build-input/configuration-repository/profiles"
+PROFILES_DST="$PROJECT_ROOT/build-input/configuration-repository/provisioning"
+
+if [[ "$USE_DEVICE" == true ]]; then
+    echo "Setting up provisioning profiles for $BUILD_CONFIG..."
+
+    case "$BUILD_CONFIG" in
+        dev|development)
+            PROFILE_SUFFIX="_Development"
+            ;;
+        dist|distribution)
+            PROFILE_SUFFIX=""
+            ;;
+    esac
+
+    # Copy profiles with correct naming
+    for target in Telegram Share Widget NotificationService NotificationContent Intents BroadcastUpload; do
+        src_file="$PROFILES_SRC/${target}${PROFILE_SUFFIX}.mobileprovision"
+        dst_file="$PROFILES_DST/${target}.mobileprovision"
+        if [[ -f "$src_file" ]]; then
+            cp "$src_file" "$dst_file"
+            echo "  Copied ${target}${PROFILE_SUFFIX}.mobileprovision -> ${target}.mobileprovision"
+        else
+            echo "  Warning: $src_file not found"
+        fi
+    done
+fi
+
 # Build disk cache argument
 DISK_CACHE_ARG=""
 if [[ -n "$DISK_CACHE" ]]; then
