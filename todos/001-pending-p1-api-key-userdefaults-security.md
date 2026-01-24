@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 priority: p1
 issue_id: "001"
 tags: [code-review, security, pr-15]
@@ -99,11 +99,11 @@ public final class SecureAIConfigurationStorage {
 
 ## Acceptance Criteria
 
-- [ ] API keys are stored in iOS Keychain, not UserDefaults
-- [ ] Keychain access uses `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`
-- [ ] Migration from UserDefaults works for existing users
-- [ ] Old UserDefaults API key data is deleted after migration
-- [ ] Build succeeds and AI features work correctly
+- [x] API keys are stored in iOS Keychain, not UserDefaults
+- [x] Keychain access uses `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`
+- [x] Migration from UserDefaults works for existing users
+- [x] Old UserDefaults API key data is deleted after migration
+- [x] Build succeeds and AI features work correctly
 
 ## Work Log
 
