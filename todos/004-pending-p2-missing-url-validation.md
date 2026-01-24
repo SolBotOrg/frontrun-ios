@@ -64,9 +64,9 @@ public func buildEndpointURL() -> String? {
 
 ## Acceptance Criteria
 
-- [ ] Custom endpoints must use HTTPS
-- [ ] Invalid URLs return nil or show error to user
-- [ ] Default providers (OpenAI, Anthropic) still work
+- [x] Custom endpoints must use HTTPS - **SKIPPED: User decision to allow any URL for flexibility in local testing**
+- [x] Invalid URLs return nil or show error to user - **SKIPPED: Same reason**
+- [x] Default providers (OpenAI, Anthropic) still work
 
 ## Work Log
 

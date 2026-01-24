@@ -7,7 +7,6 @@ swift_library(
     copts = ["-warnings-as-errors"],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
-        "//submodules/Postbox:Postbox",
         "//Frontrun/FRModels:FRModels",
     ],
     visibility = ["//visibility:public"],

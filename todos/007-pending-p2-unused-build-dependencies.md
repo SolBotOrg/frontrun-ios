@@ -66,9 +66,9 @@ swift_library(
 
 ## Acceptance Criteria
 
-- [ ] FRModels/BUILD has no SwiftSignalKit dependency
-- [ ] FRServices/BUILD has no Postbox dependency
-- [ ] Build still succeeds
+- [x] FRModels/BUILD has no SwiftSignalKit dependency
+- [x] FRServices/BUILD has no Postbox dependency
+- [x] Build still succeeds
 
 ## Work Log
 

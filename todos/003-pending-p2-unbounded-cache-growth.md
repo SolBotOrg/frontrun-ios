@@ -57,9 +57,9 @@ init() {
 
 ## Acceptance Criteria
 
-- [ ] Cache has a maximum entry count (e.g., 1000)
-- [ ] Cache entries expire or are evicted under memory pressure
-- [ ] Token fetching still works correctly
+- [x] Cache has a maximum entry count (e.g., 1000)
+- [x] Cache entries expire or are evicted under memory pressure
+- [x] Token fetching still works correctly
 
 ## Work Log
 

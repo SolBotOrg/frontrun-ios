@@ -57,9 +57,9 @@ public func getExplorerUrl() -> String? {
 
 ## Acceptance Criteria
 
-- [ ] Token addresses are validated before URL construction
-- [ ] URL parameters are properly encoded
-- [ ] Invalid addresses return nil URL
+- [x] Token addresses are validated before URL construction
+- [x] URL parameters are properly encoded
+- [x] Invalid addresses return nil URL
 
 ## Work Log
 

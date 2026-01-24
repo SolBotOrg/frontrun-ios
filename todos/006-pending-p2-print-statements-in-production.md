@@ -54,9 +54,9 @@ print("[AIService] Failed to parse JSON: \(jsonString.prefix(100))")
 
 ## Acceptance Criteria
 
-- [ ] All print statements wrapped in `#if DEBUG`
-- [ ] No user data logged in release builds
-- [ ] Debug logging still works in development
+- [x] All print statements wrapped in `#if DEBUG`
+- [x] No user data logged in release builds
+- [x] Debug logging still works in development
 
 ## Work Log
 

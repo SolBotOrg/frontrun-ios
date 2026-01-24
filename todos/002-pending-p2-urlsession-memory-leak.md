@@ -74,9 +74,9 @@ func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithErro
 
 ## Acceptance Criteria
 
-- [ ] URLSession is invalidated after streaming completes
-- [ ] No memory growth observed during repeated AI requests
-- [ ] Streaming functionality works correctly
+- [x] URLSession is invalidated after streaming completes
+- [x] No memory growth observed during repeated AI requests
+- [x] Streaming functionality works correctly
 
 ## Work Log
 

@@ -5,8 +5,6 @@ swift_library(
     module_name = "FRModels",
     srcs = glob(["Sources/**/*.swift"]),
     copts = ["-warnings-as-errors"],
-    deps = [
-        "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
-    ],
+    deps = [],
     visibility = ["//visibility:public"],
 )

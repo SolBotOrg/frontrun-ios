@@ -73,6 +73,12 @@ private class StreamingDelegate: NSObject, URLSessionDataDelegate {
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        defer {
+            // Clean up session to prevent memory leak
+            session.finishTasksAndInvalidate()
+            receivedData = Data()
+        }
+
         if let error = error {
             subscriber.putError(.networkError(error))
             return

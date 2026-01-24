@@ -484,8 +484,8 @@ private final class ChatSummarySheetScreenComponent: Component {
             
             // Prepare URLs
             let dexScreenerUrl: String
-            if let info = tokenInfo {
-                dexScreenerUrl = info.getDexScreenerUrl()
+            if let info = tokenInfo, let url = info.getDexScreenerUrl() {
+                dexScreenerUrl = url
             } else {
                 let chain = address.hasPrefix("0x") ? "ethereum" : "solana"
                 dexScreenerUrl = "https://dexscreener.com/\(chain)/\(address)"

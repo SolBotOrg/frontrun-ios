@@ -2,12 +2,27 @@ import Foundation
 import SwiftSignalKit
 import FRModels
 
+// MARK: - Cache Wrapper for NSCache
+
+private final class DexTokenInfoWrapper {
+    let value: DexTokenInfo
+
+    init(_ value: DexTokenInfo) {
+        self.value = value
+    }
+}
+
 // MARK: - DexScreener Service
 
 public final class DexScreenerService: DexScreenerServiceProtocol {
     public static let shared = DexScreenerService()
 
-    private var cache: [String: DexTokenInfo] = [:]
+    private let cache: NSCache<NSString, DexTokenInfoWrapper> = {
+        let cache = NSCache<NSString, DexTokenInfoWrapper>()
+        cache.countLimit = 1000
+        cache.totalCostLimit = 10 * 1024 * 1024 // 10MB
+        return cache
+    }()
     private var pendingRequests: [String: Signal<DexTokenInfo?, NoError>] = [:]
     private let queue = DispatchQueue(label: "com.dexscreener.cache", attributes: .concurrent)
 
@@ -19,14 +34,11 @@ public final class DexScreenerService: DexScreenerServiceProtocol {
 
     public func fetchTokenInfo(address: String) -> Signal<DexTokenInfo?, NoError> {
         let normalizedAddress = address.lowercased()
+        let cacheKey = normalizedAddress as NSString
 
-        // Check cache first
-        var cachedInfo: DexTokenInfo?
-        queue.sync {
-            cachedInfo = cache[normalizedAddress]
-        }
-        if let cached = cachedInfo {
-            return .single(cached)
+        // Check cache first (NSCache is thread-safe)
+        if let cached = cache.object(forKey: cacheKey) {
+            return .single(cached.value)
         }
 
         // Check if request is already pending
@@ -42,10 +54,11 @@ public final class DexScreenerService: DexScreenerServiceProtocol {
         let signal = self.makeRequest(address: normalizedAddress)
             |> afterNext { [weak self] info in
                 guard let self = self else { return }
+                if let info = info {
+                    // NSCache is thread-safe, no barrier needed
+                    self.cache.setObject(DexTokenInfoWrapper(info), forKey: cacheKey)
+                }
                 self.queue.async(flags: .barrier) {
-                    if let info = info {
-                        self.cache[normalizedAddress] = info
-                    }
                     self.pendingRequests.removeValue(forKey: normalizedAddress)
                 }
             }
@@ -76,9 +89,8 @@ public final class DexScreenerService: DexScreenerServiceProtocol {
     }
 
     public func clearCache() {
-        queue.async(flags: .barrier) {
-            self.cache.removeAll()
-        }
+        // NSCache is thread-safe
+        cache.removeAllObjects()
     }
 
     // MARK: - Private Methods
@@ -98,7 +110,9 @@ public final class DexScreenerService: DexScreenerServiceProtocol {
 
             let task = URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
+                    #if DEBUG
                     print("[DexScreener] Network error for \(address): \(error.localizedDescription)")
+                    #endif
                     subscriber.putNext(nil)
                     subscriber.putCompletion()
                     return
@@ -111,7 +125,9 @@ public final class DexScreenerService: DexScreenerServiceProtocol {
                 }
 
                 guard httpResponse.statusCode == 200, let data = data else {
+                    #if DEBUG
                     print("[DexScreener] HTTP error \(httpResponse.statusCode) for \(address)")
+                    #endif
                     subscriber.putNext(nil)
                     subscriber.putCompletion()
                     return
@@ -121,7 +137,9 @@ public final class DexScreenerService: DexScreenerServiceProtocol {
                     let tokenInfo = try self.parseResponse(data: data, address: address)
                     subscriber.putNext(tokenInfo)
                 } catch {
+                    #if DEBUG
                     print("[DexScreener] Parse error for \(address): \(error)")
+                    #endif
                     subscriber.putNext(nil)
                 }
                 subscriber.putCompletion()
