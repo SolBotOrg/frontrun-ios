@@ -47,36 +47,54 @@ public struct DexTokenInfo: Codable, Equatable {
     // MARK: - Explorer URLs
 
     public func getExplorerUrl() -> String? {
-        let addr = self.address
+        // Validate address before URL construction
+        guard ChainDetection.isValidTokenAddress(address) else { return nil }
+
+        // URL-encode the address for safe interpolation
+        guard let encodedAddr = address.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+            return nil
+        }
+
         switch chainId.lowercased() {
         case "ethereum", "eth":
-            return "https://etherscan.io/token/\(addr)"
+            return "https://etherscan.io/token/\(encodedAddr)"
         case "bsc", "binance":
-            return "https://bscscan.com/token/\(addr)"
+            return "https://bscscan.com/token/\(encodedAddr)"
         case "solana":
-            return "https://solscan.io/token/\(addr)"
+            return "https://solscan.io/token/\(encodedAddr)"
         case "arbitrum":
-            return "https://arbiscan.io/token/\(addr)"
+            return "https://arbiscan.io/token/\(encodedAddr)"
         case "base":
-            return "https://basescan.org/token/\(addr)"
+            return "https://basescan.org/token/\(encodedAddr)"
         case "polygon":
-            return "https://polygonscan.com/token/\(addr)"
+            return "https://polygonscan.com/token/\(encodedAddr)"
         case "avalanche", "avax":
-            return "https://snowtrace.io/token/\(addr)"
+            return "https://snowtrace.io/token/\(encodedAddr)"
         case "optimism":
-            return "https://optimistic.etherscan.io/token/\(addr)"
+            return "https://optimistic.etherscan.io/token/\(encodedAddr)"
         case "fantom", "ftm":
-            return "https://ftmscan.com/token/\(addr)"
+            return "https://ftmscan.com/token/\(encodedAddr)"
         case "cronos":
-            return "https://cronoscan.com/token/\(addr)"
+            return "https://cronoscan.com/token/\(encodedAddr)"
         default:
-            // Fallback to DexScreener
-            return "https://dexscreener.com/\(chainId)/\(addr)"
+            // Fallback to DexScreener - also encode chainId
+            guard let encodedChain = chainId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+                return nil
+            }
+            return "https://dexscreener.com/\(encodedChain)/\(encodedAddr)"
         }
     }
 
-    public func getDexScreenerUrl() -> String {
-        return "https://dexscreener.com/\(chainId)/\(pairAddress ?? address)"
+    public func getDexScreenerUrl() -> String? {
+        // URL-encode parameters for safe interpolation
+        guard let encodedChain = chainId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+            return nil
+        }
+        let targetAddress = pairAddress ?? address
+        guard let encodedAddr = targetAddress.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+            return nil
+        }
+        return "https://dexscreener.com/\(encodedChain)/\(encodedAddr)"
     }
 
     // MARK: - Formatted Values
