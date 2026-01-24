@@ -19,7 +19,7 @@ public final class FRSummarySheetScreen: ViewControllerComponentContainer {
 
         super.init(
             context: context,
-            component: SummarySheetScreenComponent(context: context, peerId: peerId),
+            component: FRSummarySheetScreenComponent(context: context, peerId: peerId),
             navigationBarAppearance: .none,
             theme: .default
         )

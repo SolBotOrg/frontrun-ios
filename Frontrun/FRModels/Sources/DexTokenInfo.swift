@@ -150,6 +150,39 @@ public struct DexTokenInfo: Codable, Equatable {
     }
 }
 
+// MARK: - Address Formatting
+
+public enum FRAddressFormatting {
+    /// Shorten a token address for display (e.g., "0x1234...5678")
+    public static func shortenAddress(_ address: String) -> String {
+        guard address.count > 12 else { return address }
+        let prefix = address.prefix(6)
+        let suffix = address.suffix(4)
+        return "\(prefix)...\(suffix)"
+    }
+}
+
+// MARK: - Chain Info
+
+public enum FRChainInfo {
+    /// Get the explorer name for a given chain ID
+    public static func getExplorerName(for chainId: String) -> String {
+        switch chainId.lowercased() {
+        case "ethereum", "eth": return "Etherscan"
+        case "bsc", "binance": return "BscScan"
+        case "solana": return "Solscan"
+        case "arbitrum": return "Arbiscan"
+        case "base": return "BaseScan"
+        case "polygon": return "PolygonScan"
+        case "avalanche", "avax": return "Snowtrace"
+        case "optimism": return "Optimistic Etherscan"
+        case "fantom", "ftm": return "FTMScan"
+        case "cronos": return "Cronoscan"
+        default: return "Explorer"
+        }
+    }
+}
+
 // MARK: - Chain Detection Helpers
 
 public enum ChainDetection {

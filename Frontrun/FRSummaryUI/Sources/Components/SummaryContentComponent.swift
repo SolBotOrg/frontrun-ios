@@ -17,18 +17,9 @@ import AvatarNode
 import FRServices
 import FRModels
 
-// MARK: - Helper Functions
+// MARK: - FRSummaryContentComponent
 
-private func shortenTokenAddress(_ address: String) -> String {
-    guard address.count > 12 else { return address }
-    let prefix = address.prefix(6)
-    let suffix = address.suffix(4)
-    return "\(prefix)...\(suffix)"
-}
-
-// MARK: - SummaryContentComponent
-
-final class SummaryContentComponent: Component {
+final class FRSummaryContentComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
 
     let context: AccountContext
@@ -65,7 +56,7 @@ final class SummaryContentComponent: Component {
         self.showTokenDetail = showTokenDetail
     }
 
-    static func ==(lhs: SummaryContentComponent, rhs: SummaryContentComponent) -> Bool {
+    static func ==(lhs: FRSummaryContentComponent, rhs: FRSummaryContentComponent) -> Bool {
         if lhs.context !== rhs.context { return false }
         if lhs.peerId != rhs.peerId { return false }
         if lhs.theme !== rhs.theme { return false }
@@ -546,7 +537,7 @@ final class SummaryContentComponent: Component {
             if let info = tokenInfo {
                 displayName = "$\(info.symbol)"
             } else {
-                displayName = shortenTokenAddress(address)
+                displayName = FRAddressFormatting.shortenAddress(address)
             }
 
             let nameString = NSMutableAttributedString(string: displayName, attributes: [
@@ -667,7 +658,7 @@ final class SummaryContentComponent: Component {
 
         private weak var componentState: EmptyComponentState?
 
-        func update(component: SummaryContentComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
+        func update(component: FRSummaryContentComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
             self.dismissAction = component.dismiss
             self.navigateToMessageAction = component.navigateToMessage
             self.openSettingsAction = component.openSettings

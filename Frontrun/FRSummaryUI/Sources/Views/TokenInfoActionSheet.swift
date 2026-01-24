@@ -6,9 +6,9 @@ import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
 
-// MARK: - TokenInfoActionSheetItem
+// MARK: - FRTokenInfoActionSheetItem
 
-final class TokenInfoActionSheetItem: ActionSheetItem {
+final class FRTokenInfoActionSheetItem: ActionSheetItem {
     let name: String
     let symbol: String
     let price: String
@@ -34,17 +34,17 @@ final class TokenInfoActionSheetItem: ActionSheetItem {
     }
 
     func node(theme: ActionSheetControllerTheme) -> ActionSheetItemNode {
-        return TokenInfoActionSheetItemNode(item: self, theme: theme)
+        return FRTokenInfoActionSheetItemNode(item: self, theme: theme)
     }
 
     func updateNode(_ node: ActionSheetItemNode) {
     }
 }
 
-// MARK: - TokenInfoActionSheetItemNode
+// MARK: - FRTokenInfoActionSheetItemNode
 
-final class TokenInfoActionSheetItemNode: ActionSheetItemNode {
-    private let item: TokenInfoActionSheetItem
+final class FRTokenInfoActionSheetItemNode: ActionSheetItemNode {
+    private let item: FRTokenInfoActionSheetItem
 
     private let imageNode: ASImageNode
     private let nameLabel: ImmediateTextNode
@@ -54,7 +54,7 @@ final class TokenInfoActionSheetItemNode: ActionSheetItemNode {
 
     private var imageDisposable: Disposable?
 
-    init(item: TokenInfoActionSheetItem, theme: ActionSheetControllerTheme) {
+    init(item: FRTokenInfoActionSheetItem, theme: ActionSheetControllerTheme) {
         self.item = item
 
         self.imageNode = ASImageNode()

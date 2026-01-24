@@ -16,18 +16,9 @@ import UndoUI
 import FRServices
 import FRModels
 
-// MARK: - Helper Functions
+// MARK: - FRSummarySheetScreenComponent
 
-private func shortenTokenAddress(_ address: String) -> String {
-    guard address.count > 12 else { return address }
-    let prefix = address.prefix(6)
-    let suffix = address.suffix(4)
-    return "\(prefix)...\(suffix)"
-}
-
-// MARK: - SummarySheetScreenComponent
-
-final class SummarySheetScreenComponent: Component {
+final class FRSummarySheetScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
 
     let context: AccountContext
@@ -38,7 +29,7 @@ final class SummarySheetScreenComponent: Component {
         self.peerId = peerId
     }
 
-    static func ==(lhs: SummarySheetScreenComponent, rhs: SummarySheetScreenComponent) -> Bool {
+    static func ==(lhs: FRSummarySheetScreenComponent, rhs: FRSummarySheetScreenComponent) -> Bool {
         if lhs.context !== rhs.context { return false }
         if lhs.peerId != rhs.peerId { return false }
         return true
@@ -48,7 +39,7 @@ final class SummarySheetScreenComponent: Component {
         private let sheetContent = ComponentView<(ViewControllerComponentContainer.Environment, SheetComponentEnvironment)>()
         private let sheetAnimateOut = ActionSlot<Action<Void>>()
 
-        private var component: SummarySheetScreenComponent?
+        private var component: FRSummarySheetScreenComponent?
         private weak var state: EmptyComponentState?
         private var environment: ViewControllerComponentContainer.Environment?
 
@@ -74,7 +65,7 @@ final class SummarySheetScreenComponent: Component {
             self.tokenDetailDisposable?.dispose()
         }
 
-        func update(component: SummarySheetScreenComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
+        func update(component: FRSummarySheetScreenComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
             self.component = component
             self.state = state
 
@@ -114,7 +105,7 @@ final class SummarySheetScreenComponent: Component {
             let sheetSize = self.sheetContent.update(
                 transition: transition,
                 component: AnyComponent(SheetComponent(
-                    content: AnyComponent(SummaryContentComponent(
+                    content: AnyComponent(FRSummaryContentComponent(
                         context: component.context,
                         peerId: component.peerId,
                         theme: environment.theme,
@@ -425,7 +416,7 @@ final class SummarySheetScreenComponent: Component {
             var items: [ActionSheetItem] = []
 
             if let info = tokenInfo {
-                items.append(TokenInfoActionSheetItem(
+                items.append(FRTokenInfoActionSheetItem(
                     name: info.name,
                     symbol: info.symbol,
                     price: info.formattedPrice,
@@ -438,7 +429,7 @@ final class SummarySheetScreenComponent: Component {
                     theme: theme
                 ))
             } else {
-                let shortAddr = shortenTokenAddress(address)
+                let shortAddr = FRAddressFormatting.shortenAddress(address)
                 items.append(ActionSheetTextItem(title: "Token: \(shortAddr)\n(No data available)"))
             }
 
@@ -447,17 +438,23 @@ final class SummarySheetScreenComponent: Component {
                 dexScreenerUrl = url
             } else {
                 let chain = address.hasPrefix("0x") ? "ethereum" : "solana"
-                dexScreenerUrl = "https://dexscreener.com/\(chain)/\(address)"
+                // URL-encode address for safe interpolation
+                let encodedAddress = address.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? address
+                dexScreenerUrl = "https://dexscreener.com/\(chain)/\(encodedAddress)"
             }
 
-            let explorerName = self.getExplorerName(chainId: tokenInfo?.chainId ?? (address.hasPrefix("0x") ? "ethereum" : "solana"))
+            let explorerName = FRChainInfo.getExplorerName(for: tokenInfo?.chainId ?? (address.hasPrefix("0x") ? "ethereum" : "solana"))
             var explorerUrl: String
             if let info = tokenInfo, let url = info.getExplorerUrl() {
                 explorerUrl = url
-            } else if address.hasPrefix("0x") {
-                explorerUrl = "https://etherscan.io/token/\(address)"
             } else {
-                explorerUrl = "https://solscan.io/token/\(address)"
+                // URL-encode address for safe interpolation
+                let encodedAddress = address.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? address
+                if address.hasPrefix("0x") {
+                    explorerUrl = "https://etherscan.io/token/\(encodedAddress)"
+                } else {
+                    explorerUrl = "https://solscan.io/token/\(encodedAddress)"
+                }
             }
 
             let actionSheet = ActionSheetController(presentationData: presentationData)
@@ -503,20 +500,6 @@ final class SummarySheetScreenComponent: Component {
             controller.present(actionSheet, in: .window(.root))
         }
 
-        private func getExplorerName(chainId: String) -> String {
-            switch chainId.lowercased() {
-            case "ethereum", "eth": return "Etherscan"
-            case "bsc", "binance": return "BscScan"
-            case "solana": return "Solscan"
-            case "arbitrum": return "Arbiscan"
-            case "base": return "BaseScan"
-            case "polygon": return "PolygonScan"
-            case "avalanche", "avax": return "Snowtrace"
-            case "optimism": return "Optimistic Etherscan"
-            case "fantom", "ftm": return "FTMScan"
-            default: return "Explorer"
-            }
-        }
     }
 
     func makeView() -> View {
