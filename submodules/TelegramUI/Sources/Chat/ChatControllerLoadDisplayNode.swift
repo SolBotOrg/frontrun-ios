@@ -48,6 +48,7 @@ import LocalizedPeerData
 import PhoneNumberFormat
 import SettingsUI
 import FRServices
+import FRSummaryUI
 import UrlWhitelist
 import TelegramIntents
 import TooltipUI
@@ -1564,7 +1565,7 @@ extension ChatControllerImpl {
                 let settingsController = aiSettingsController(context: strongSelf.context)
                 strongSelf.push(settingsController)
             } else {
-                let controller = ChatSummarySheetScreen(context: strongSelf.context, peerId: peerId)
+                let controller = FRSummarySheetScreen(context: strongSelf.context, peerId: peerId)
                 controller.parentController = { [weak strongSelf] in
                     return strongSelf
                 }

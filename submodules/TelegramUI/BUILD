@@ -52,6 +52,7 @@ swift_library(
         "//third-party/recaptcha:RecaptchaEnterpriseSDK",
         "//Frontrun/FRServices:FRServices",
         "//Frontrun/FRModels:FRModels",
+        "//Frontrun/FRSummaryUI:FRSummaryUI",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/SSignalKit/SSignalKit:SSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",

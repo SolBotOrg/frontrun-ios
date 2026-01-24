@@ -21,9 +21,31 @@ This file tracks every modification made to upstream Telegram files. When syncin
 # Add to deps section:
 "//Frontrun/FRServices:FRServices",
 "//Frontrun/FRModels:FRModels",
+"//Frontrun/FRSummaryUI:FRSummaryUI",
 ```
 
 **Conflict Resolution:** Simply append to deps array. Order doesn't matter.
+
+---
+
+### submodules/TelegramUI/Sources/Chat/ChatControllerLoadDisplayNode.swift
+
+**Purpose:** Import and use FRSummaryUI for AI chat summary feature
+
+**Location:** Import section and summary button handler (around line 1568)
+
+**Changes:**
+```swift
+// Add import:
+import FRSummaryUI
+
+// In summary button handler, replace:
+// let controller = ChatSummarySheetScreen(...)
+// with:
+let controller = FRSummarySheetScreen(context: strongSelf.context, peerId: peerId)
+```
+
+**Conflict Resolution:** Add import, update class reference from `ChatSummarySheetScreen` to `FRSummarySheetScreen`.
 
 ---
 
@@ -114,6 +136,8 @@ When merging upstream:
 | Date | File | Change | Reason |
 |------|------|--------|--------|
 | 2026-01-24 | TelegramUI/BUILD | Added FRServices + FRModels deps | Migrated from submodules to Frontrun/ |
+| 2026-01-24 | TelegramUI/BUILD | Added FRSummaryUI dep | Migrated ChatSummarySheetScreen to FRSummaryUI |
+| 2026-01-24 | ChatControllerLoadDisplayNode.swift | Import FRSummaryUI, use FRSummarySheetScreen | Migrated ChatSummarySheetScreen to FRSummaryUI |
 | 2026-01-24 | SettingsUI/BUILD | Added FRServices dep | Migrated from FrontrunAIModule |
 | 2026-01-24 | ChatListUI/BUILD | Added FRServices dep | Migrated from FrontrunAIModule |
 | 2026-01-24 | (planned) | TelegramRootController.swift | Tab injection |
