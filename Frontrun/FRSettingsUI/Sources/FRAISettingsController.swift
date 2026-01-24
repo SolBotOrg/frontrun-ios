@@ -1,9 +1,6 @@
 import Foundation
-import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
-import TelegramCore
 import TelegramPresentationData
 import ItemListUI
 import PresentationDataUtils
@@ -13,9 +10,7 @@ import FRServices
 import SearchableSelectionScreen
 
 private final class FRAISettingsControllerArguments {
-    let context: AccountContext
     let updateEnabled: (Bool) -> Void
-    let updateProvider: (AIProvider) -> Void
     let updateAPIKey: (String) -> Void
     let updateBaseURL: (String) -> Void
     let updateModel: (String) -> Void
@@ -24,9 +19,7 @@ private final class FRAISettingsControllerArguments {
     let fetchModels: () -> Void
 
     init(
-        context: AccountContext,
         updateEnabled: @escaping (Bool) -> Void,
-        updateProvider: @escaping (AIProvider) -> Void,
         updateAPIKey: @escaping (String) -> Void,
         updateBaseURL: @escaping (String) -> Void,
         updateModel: @escaping (String) -> Void,
@@ -34,9 +27,7 @@ private final class FRAISettingsControllerArguments {
         selectModel: @escaping () -> Void,
         fetchModels: @escaping () -> Void
     ) {
-        self.context = context
         self.updateEnabled = updateEnabled
-        self.updateProvider = updateProvider
         self.updateAPIKey = updateAPIKey
         self.updateBaseURL = updateBaseURL
         self.updateModel = updateModel
@@ -66,7 +57,7 @@ private enum FRAISettingsEntry: ItemListNodeEntry {
 
     case endpointHeader(PresentationTheme, String)
     case baseURL(PresentationTheme, String, String)
-    case model(PresentationTheme, String, AIProvider)
+    case model(PresentationTheme, String)
     case fetchModels(PresentationTheme, Bool)
     case endpointInfo(PresentationTheme, String)
 
@@ -145,7 +136,7 @@ private enum FRAISettingsEntry: ItemListNodeEntry {
             return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: "Base URL", attributes: [.font: Font.regular(presentationData.fontSize.itemListBaseFontSize), .foregroundColor: presentationData.theme.list.itemPrimaryTextColor]), text: text, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), alignment: .right, spacing: 16.0, sectionId: self.section, textUpdated: { value in
                 arguments.updateBaseURL(value)
             }, action: {})
-        case let .model(_, currentModel, _):
+        case let .model(_, currentModel):
             return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: "Model", label: currentModel, sectionId: self.section, style: .blocks, action: {
                 arguments.selectModel()
             })
@@ -203,7 +194,7 @@ private func frAISettingsControllerEntries(
     // Endpoint section
     entries.append(.endpointHeader(presentationData.theme, "ENDPOINT"))
     entries.append(.baseURL(presentationData.theme, state.configuration.provider.defaultEndpoint, state.configuration.baseURL))
-    entries.append(.model(presentationData.theme, state.configuration.model, state.configuration.provider))
+    entries.append(.model(presentationData.theme, state.configuration.model))
     entries.append(.fetchModels(presentationData.theme, state.isFetchingModels))
     entries.append(.endpointInfo(presentationData.theme, "Customize the API endpoint and model if needed. Tap 'Fetch Available Models' to get the model list from the server."))
 
@@ -225,21 +216,10 @@ public func aiSettingsController(context: AccountContext) -> ViewController {
     var pushControllerImpl: ((ViewController) -> Void)?
 
     let arguments = FRAISettingsControllerArguments(
-        context: context,
         updateEnabled: { value in
             updateState { state in
                 var state = state
                 state.configuration.enabled = value
-                AIConfigurationStorage.shared.saveConfiguration(state.configuration)
-                return state
-            }
-        },
-        updateProvider: { value in
-            updateState { state in
-                var state = state
-                state.configuration.provider = value
-                state.configuration.baseURL = value.defaultEndpoint
-                state.configuration.model = value.defaultModel
                 AIConfigurationStorage.shared.saveConfiguration(state.configuration)
                 return state
             }

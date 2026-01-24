@@ -12,11 +12,9 @@ swift_library(
         # Signal kit
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
 
-        # Telegram context and core
+        # Telegram context
         "//submodules/AccountContext:AccountContext",
-        "//submodules/TelegramCore:TelegramCore",
         "//submodules/TelegramPresentationData:TelegramPresentationData",
-        "//submodules/Postbox:Postbox",
 
         # Display
         "//submodules/Display:Display",

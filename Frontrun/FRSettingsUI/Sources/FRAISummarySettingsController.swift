@@ -1,9 +1,6 @@
 import Foundation
-import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
-import TelegramCore
 import TelegramPresentationData
 import ItemListUI
 import PresentationDataUtils
@@ -12,18 +9,15 @@ import PromptUI
 import FRServices
 
 private final class FRAISummarySettingsControllerArguments {
-    let context: AccountContext
     let selectMessageCount: () -> Void
     let updateUserPrompt: (String) -> Void
     let resetUserPrompt: () -> Void
 
     init(
-        context: AccountContext,
         selectMessageCount: @escaping () -> Void,
         updateUserPrompt: @escaping (String) -> Void,
         resetUserPrompt: @escaping () -> Void
     ) {
-        self.context = context
         self.selectMessageCount = selectMessageCount
         self.updateUserPrompt = updateUserPrompt
         self.resetUserPrompt = resetUserPrompt
@@ -142,7 +136,6 @@ public func aiSummarySettingsController(context: AccountContext) -> ViewControll
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
 
     let arguments = FRAISummarySettingsControllerArguments(
-        context: context,
         selectMessageCount: {
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             let actionSheet = ActionSheetController(presentationData: presentationData)
