@@ -15,6 +15,9 @@ SKIP_BUILD=false
 USE_DEVICE=false
 DEVICE_UDID=""
 BUILD_CONFIG="dev"
+BUILD_NUMBER="10000"
+TELEGRAM_VERSION="12.2.1"
+RELEASE_BUILD=false
 for arg in "$@"; do
     case $arg in
         --disk-cache=*)
@@ -50,19 +53,34 @@ for arg in "$@"; do
             BUILD_CONFIG="dist"
             shift
             ;;
+        --build-number=*)
+            BUILD_NUMBER="${arg#*=}"
+            shift
+            ;;
+        --telegram-version=*)
+            TELEGRAM_VERSION="${arg#*=}"
+            shift
+            ;;
+        --release)
+            RELEASE_BUILD=true
+            shift
+            ;;
         --help|-h)
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
-            echo "  --dev                Use development configuration (default)"
-            echo "  --dist               Use distribution configuration"
-            echo "  --config=<dev|dist>  Set build configuration"
-            echo "  --disk-cache=<path>  Set custom disk cache path (default: ~/telegram-bazel-cache)"
-            echo "  --no-disk-cache      Disable disk cache"
-            echo "  --skip-build         Skip build, just install and launch"
-            echo "  --device             Build and install on physical device (requires provisioning)"
-            echo "  --device=<udid>      Build and install on specific physical device"
-            echo "  --help, -h           Show this help message"
+            echo "  --dev                  Use development configuration (default)"
+            echo "  --dist                 Use distribution configuration"
+            echo "  --config=<dev|dist>    Set build configuration"
+            echo "  --build-number=<num>   Set build number (default: 10000)"
+            echo "  --telegram-version=<v> Set app version (default: 12.2.1)"
+            echo "  --release              Build with release optimizations (-c opt)"
+            echo "  --disk-cache=<path>    Set custom disk cache path (default: ~/telegram-bazel-cache)"
+            echo "  --no-disk-cache        Disable disk cache"
+            echo "  --skip-build           Skip build, just install and launch"
+            echo "  --device               Build and install on physical device (requires provisioning)"
+            echo "  --device=<udid>        Build and install on specific physical device"
+            echo "  --help, -h             Show this help message"
             exit 0
             ;;
     esac
@@ -184,7 +202,12 @@ EOF
 echo "Bundle ID: $BUNDLE_ID"
 
 # Copy provisioning profiles based on config
-PROFILES_SRC="$PROJECT_ROOT/build-input/configuration-repository/profiles"
+# In worktrees, use profiles from main repo since they're not checked into git
+if [[ -n "$MAIN_REPO_ROOT" ]]; then
+    PROFILES_SRC="$MAIN_REPO_ROOT/build-input/configuration-repository/profiles"
+else
+    PROFILES_SRC="$PROJECT_ROOT/build-input/configuration-repository/profiles"
+fi
 PROFILES_DST="$PROJECT_ROOT/build-input/configuration-repository/provisioning"
 
 if [[ "$USE_DEVICE" == true ]]; then
@@ -222,6 +245,16 @@ else
     echo "Disk cache disabled"
 fi
 
+# Determine build optimization level
+if [[ "$RELEASE_BUILD" == true ]]; then
+    BUILD_OPT="opt"
+    echo "Building with release optimizations"
+else
+    BUILD_OPT="dbg"
+fi
+
+echo "Build number: $BUILD_NUMBER, Version: $TELEGRAM_VERSION"
+
 # Build if not skipped
 if [[ "$SKIP_BUILD" == false ]]; then
     if [[ "$USE_DEVICE" == true ]]; then
@@ -232,10 +265,10 @@ if [[ "$SKIP_BUILD" == false ]]; then
             --verbose_failures \
             --remote_cache_async \
             --jobs=16 \
-            --define=buildNumber=10000 \
-            --define=telegramVersion=12.2.1 \
+            --define=buildNumber=$BUILD_NUMBER \
+            --define=telegramVersion=$TELEGRAM_VERSION \
             ${DISK_CACHE_ARG} \
-            -c dbg \
+            -c $BUILD_OPT \
             --ios_multi_cpus=arm64 \
             --watchos_cpus=arm64_32 \
             --features=swift.enable_batch_mode
@@ -247,10 +280,10 @@ if [[ "$SKIP_BUILD" == false ]]; then
             --verbose_failures \
             --remote_cache_async \
             --jobs=16 \
-            --define=buildNumber=10000 \
-            --define=telegramVersion=12.2.1 \
+            --define=buildNumber=$BUILD_NUMBER \
+            --define=telegramVersion=$TELEGRAM_VERSION \
             ${DISK_CACHE_ARG} \
-            -c dbg \
+            -c $BUILD_OPT \
             --ios_multi_cpus=sim_arm64 \
             --watchos_cpus=arm64_32 \
             --features=swift.enable_batch_mode \
