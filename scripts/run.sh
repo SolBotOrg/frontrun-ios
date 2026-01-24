@@ -68,6 +68,52 @@ for arg in "$@"; do
     esac
 done
 
+# Detect if we're in a git worktree and find main repo
+MAIN_REPO_ROOT=""
+GIT_COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null)
+if [[ -n "$GIT_COMMON_DIR" && "$GIT_COMMON_DIR" != ".git" && "$GIT_COMMON_DIR" != "$PROJECT_ROOT/.git" ]]; then
+    # We're in a worktree - main repo is parent of .git directory
+    MAIN_REPO_ROOT=$(dirname "$GIT_COMMON_DIR")
+    echo "Detected worktree, main repo: $MAIN_REPO_ROOT"
+
+    # Initialize submodules if needed (check if any submodule dir is empty)
+    SUBMODULE_EMPTY=false
+    for submod_dir in build-system/bazel-rules/apple_support build-system/bazel-rules/rules_apple; do
+        if [[ -d "$PROJECT_ROOT/$submod_dir" && -z "$(ls -A "$PROJECT_ROOT/$submod_dir" 2>/dev/null)" ]]; then
+            SUBMODULE_EMPTY=true
+            break
+        fi
+    done
+    if [[ "$SUBMODULE_EMPTY" == true ]]; then
+        echo "Initializing submodules for worktree..."
+        git submodule update --init --recursive
+    fi
+
+    # Set up build-input directory structure if missing
+    if [[ ! -d "$PROJECT_ROOT/build-input" ]]; then
+        echo "Setting up build-input directory for worktree..."
+        mkdir -p "$PROJECT_ROOT/build-input/configuration-repository/profiles"
+        mkdir -p "$PROJECT_ROOT/build-input/configuration-repository/provisioning"
+
+        # Symlink the bazel binary
+        if [[ -f "$MAIN_REPO_ROOT/build-input/bazel-8.4.2-darwin-arm64" ]]; then
+            ln -sf "$MAIN_REPO_ROOT/build-input/bazel-8.4.2-darwin-arm64" "$PROJECT_ROOT/build-input/bazel-8.4.2-darwin-arm64"
+        fi
+
+        # Copy bazel config files (BUILD, MODULE.bazel, WORKSPACE, etc.)
+        for file in BUILD MODULE.bazel MODULE.bazel.lock WORKSPACE; do
+            if [[ -f "$MAIN_REPO_ROOT/build-input/configuration-repository/$file" ]]; then
+                cp "$MAIN_REPO_ROOT/build-input/configuration-repository/$file" "$PROJECT_ROOT/build-input/configuration-repository/$file"
+            fi
+        done
+
+        # Copy provisioning profiles if they exist
+        if [[ -d "$MAIN_REPO_ROOT/build-input/configuration-repository/profiles" ]]; then
+            cp -r "$MAIN_REPO_ROOT/build-input/configuration-repository/profiles/"* "$PROJECT_ROOT/build-input/configuration-repository/profiles/" 2>/dev/null || true
+        fi
+    fi
+fi
+
 # Set configuration file based on build config
 case "$BUILD_CONFIG" in
     dev|development)
@@ -85,6 +131,19 @@ case "$BUILD_CONFIG" in
         exit 1
         ;;
 esac
+
+# If config file doesn't exist and we're in a worktree, copy from main repo
+if [[ ! -f "$CONFIG_FILE" && -n "$MAIN_REPO_ROOT" ]]; then
+    MAIN_CONFIG_FILE="$MAIN_REPO_ROOT/build-system/$(basename "$CONFIG_FILE")"
+    if [[ -f "$MAIN_CONFIG_FILE" ]]; then
+        echo "Copying configuration from main repo..."
+        mkdir -p "$(dirname "$CONFIG_FILE")"
+        cp "$MAIN_CONFIG_FILE" "$CONFIG_FILE"
+    else
+        echo "Error: Config file not found in main repo: $MAIN_CONFIG_FILE"
+        exit 1
+    fi
+fi
 
 # Update variables.bzl from JSON config
 VARIABLES_FILE="$PROJECT_ROOT/build-input/configuration-repository/variables.bzl"

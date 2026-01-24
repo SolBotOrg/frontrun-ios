@@ -87,3 +87,4 @@ build-system/frontrun-distribution-config.json
 bazel-frontrun-ios
 # Provisioning profiles
 build-system/frontrun-codesigning/
+bazel-frontrun-ios.*
