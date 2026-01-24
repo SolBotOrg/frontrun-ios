@@ -1,4 +1,5 @@
 import Foundation
+import Security
 import SwiftSignalKit
 
 public enum AIProvider: String, Codable, CaseIterable {
@@ -244,7 +245,8 @@ extension AIConfiguration: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         try container.encode(provider, forKey: .provider)
-        try container.encode(apiKey, forKey: .apiKey)
+        // NOTE: apiKey is NOT encoded here - it's stored securely in Keychain
+        // See SecureAPIKeyStorage for API key storage
         try container.encode(baseURL, forKey: .baseURL)
         try container.encode(model, forKey: .model)
         try container.encode(enabled, forKey: .enabled)
@@ -534,25 +536,109 @@ extension AIConfiguration: Codable {
     }
 }
 
+// MARK: - Keychain Storage
+
+public enum KeychainError: Error {
+    case saveFailed(OSStatus)
+    case deleteFailed(OSStatus)
+    case dataConversionFailed
+}
+
+/// Simple Keychain storage for sensitive data.
+/// Uses `kSecAttrAccessibleAfterFirstUnlock` to allow iCloud Keychain sync across devices.
+public final class KeychainStorage {
+    private let service: String
+
+    public static let shared = KeychainStorage(service: "com.frontrun.keychain")
+
+    public init(service: String) {
+        self.service = service
+    }
+
+    public func save(_ value: String, forKey key: String) throws {
+        guard let data = value.data(using: .utf8) else {
+            throw KeychainError.dataConversionFailed
+        }
+
+        var query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key
+        ]
+
+        SecItemDelete(query as CFDictionary)
+
+        guard !value.isEmpty else { return }
+
+        query[kSecValueData as String] = data
+        query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+
+        let status = SecItemAdd(query as CFDictionary, nil)
+        guard status == errSecSuccess else {
+            throw KeychainError.saveFailed(status)
+        }
+    }
+
+    public func getString(forKey key: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        guard status == errSecSuccess,
+              let data = result as? Data,
+              let value = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        return value
+    }
+
+    public func delete(forKey key: String) throws {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key
+        ]
+
+        let status = SecItemDelete(query as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw KeychainError.deleteFailed(status)
+        }
+    }
+}
+
 // MARK: - Configuration Storage
 
-// TODO: Migrate API key storage to Keychain for security (separate ticket)
 public final class AIConfigurationStorage {
     private let userDefaultsKey = "telegram.ai.configuration"
+    private let migrationKey = "telegram.ai.keychain.migrated"
+    private let apiKeyKeychainKey = "ai-api-key"
 
     public static let shared = AIConfigurationStorage()
 
-    private init() {}
+    private init() {
+        migrateAPIKeyToKeychainIfNeeded()
+    }
 
     public func getConfiguration() -> AIConfiguration {
         guard let data = UserDefaults.standard.data(forKey: userDefaultsKey),
-              let config = try? JSONDecoder().decode(AIConfiguration.self, from: data) else {
+              var config = try? JSONDecoder().decode(AIConfiguration.self, from: data) else {
             return AIConfiguration()
         }
+
+        config.apiKey = KeychainStorage.shared.getString(forKey: apiKeyKeychainKey) ?? ""
         return config
     }
 
     public func saveConfiguration(_ config: AIConfiguration) {
+        try? KeychainStorage.shared.save(config.apiKey, forKey: apiKeyKeychainKey)
+
         if let data = try? JSONEncoder().encode(config) {
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
             UserDefaults.standard.synchronize()
@@ -565,5 +651,41 @@ public final class AIConfigurationStorage {
             subscriber.putCompletion()
             return EmptyDisposable
         }
+    }
+
+    // MARK: - Migration
+    // TODO(chris): remove by January 31, 2026
+    private func migrateAPIKeyToKeychainIfNeeded() {
+        // Check if migration has already been done
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+
+        // Try to load old configuration that may contain API key
+        guard let data = UserDefaults.standard.data(forKey: userDefaultsKey) else {
+            UserDefaults.standard.set(true, forKey: migrationKey)
+            return
+        }
+
+        // Decode using a temporary struct that includes apiKey
+        struct LegacyConfig: Codable {
+            var apiKey: String?
+        }
+
+        if let legacyConfig = try? JSONDecoder().decode(LegacyConfig.self, from: data),
+           let apiKey = legacyConfig.apiKey,
+           !apiKey.isEmpty {
+            try? KeychainStorage.shared.save(apiKey, forKey: self.apiKeyKeychainKey)
+
+            // Re-save the config without the API key in UserDefaults
+            if var fullConfig = try? JSONDecoder().decode(AIConfiguration.self, from: data) {
+                fullConfig.apiKey = "" // Clear it before re-encoding
+                if let newData = try? JSONEncoder().encode(fullConfig) {
+                    UserDefaults.standard.set(newData, forKey: userDefaultsKey)
+                }
+            }
+        }
+
+        // Mark migration as complete
+        UserDefaults.standard.set(true, forKey: migrationKey)
+        UserDefaults.standard.synchronize()
     }
 }
